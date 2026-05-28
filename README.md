@@ -55,7 +55,7 @@ http://localhost:4173
 
 ## GitHub Pages Deployment
 
-`index.html` includes an inline copy of `styles.css`, and `src/main.js` also injects the same stylesheet at runtime. This double fallback protects the page on GitHub Pages if the external stylesheet is not served, cached incorrectly, or the deployed HTML shell is stale while JavaScript is current. Keep `styles.css` as the editable source of truth, and refresh the inline copies in `index.html` and `src/main.js` after style changes.
+`index.html` is standalone for GitHub Pages: it includes inline CSS and inline JavaScript. `src/main.js` also injects the same stylesheet at runtime. This protects the page if GitHub Pages caches, blocks, or misroutes external assets. Keep `styles.css` and `src/main.js` as editable source files, then refresh their inline copies in `index.html` after changes.
 
 If the system `node` command is unavailable, run with the bundled Codex Node runtime:
 
