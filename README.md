@@ -53,6 +53,10 @@ Then open:
 http://localhost:4173
 ```
 
+## GitHub Pages Deployment
+
+`index.html` includes an inline copy of `styles.css` so the page still renders correctly on GitHub Pages even if the external stylesheet is not served or is cached incorrectly. Keep `styles.css` as the editable source of truth, and refresh the inline block in `index.html` after style changes.
+
 If the system `node` command is unavailable, run with the bundled Codex Node runtime:
 
 ```powershell

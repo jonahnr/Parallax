@@ -231,7 +231,11 @@ select:focus {
   align-items: start;
 }
 
-.main-column,
+.main-column {
+  display: grid;
+  gap: 14px;
+}
+
 .side-column {
   display: grid;
   gap: 14px;
