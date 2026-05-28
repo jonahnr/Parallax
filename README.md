@@ -1,85 +1,132 @@
 # Worker Safety Intelligence Digest
 
-Premium live mockup for Parallax Data Lab showing an executive worker-safety intelligence digest. The experience is designed to feel like an operational intelligence product rather than a static dashboard or marketing graphic.
+React + Vite prototype for a Parallax Data Lab worker-safety intelligence product. The app presents a weekly executive intelligence digest with dynamic slicers, leadership priorities, open-text concern detection, recovery signals, operational follow-up risks, and a sticky operational signal heatmap.
 
-## What It Includes
+## Stack
 
-- Branded Parallax Data Lab header and reporting period
-- Dynamic slicers for region, business unit, workflow type, time range, impact, and review state
-- Executive summary with adaptive "Top 3 Things to Know"
-- Always-filled Top Leadership Attention Items table with related-priority backfill
-- Sticky Operational Signal Heatmap with region-by-signal scoring
-- Emerging risk patterns, open-text concern signals, operational recovery items, and follow-up risk metrics
-- Review links and strategic executive callout
-
-## Interaction Model
-
-The mock data is deterministic and only changes in response to user interaction. There are no automatic timer-based data updates.
-
-Supported interactions:
-
-- Change slicers to update summary, table, lower digest cards, and highlighted heatmap context
-- Select Workflow Type to focus leadership items without mutating unrelated heatmap values
-- Hover heatmap cells to inspect signal detail
-- Sort leadership table columns
-- Click signal rows or lower-card rows to focus a workflow type
+- React 18
+- Vite
+- Tailwind CSS
+- Simulated JSON-style operational intelligence data
+- Pure JavaScript scoring/filtering utilities
 
 ## File Structure
 
 ```text
 .
-├── README.md
-├── index.html
-├── package.json
-├── server.mjs
-├── styles.css
-├── assets/
-│   └── parallax-logo.svg
-└── src/
-    └── main.js
+|-- README.md
+|-- index.html
+|-- package.json
+|-- postcss.config.js
+|-- tailwind.config.js
+|-- vite.config.js
+|-- assets/
+|   `-- parallax-logo.svg
+`-- src/
+    |-- main.js
+    |-- styles.css
+    |-- data/
+    |   `-- digestData.js
+    `-- lib/
+        `-- intelligence.js
 ```
 
-## Run Locally
+## Source Of Truth
 
-Use the included static Node server:
+`src/` is the source of truth.
+
+- `src/main.js`: React components and app state
+- `src/data/digestData.js`: simulated operational safety intelligence data
+- `src/lib/intelligence.js`: scoring, filtering, ranking, heatmap, and derived metric helpers
+- `src/styles.css`: Tailwind entry and global base styles
+
+`index.html` is now only the Vite app shell.
+
+## Install
 
 ```bash
-npm start
+npm install
 ```
 
-Then open:
+## Development
+
+```bash
+npm run dev
+```
+
+Open:
 
 ```text
 http://localhost:4173
 ```
 
-## GitHub Pages Deployment
+## Production Build
 
-`index.html` is standalone for GitHub Pages: it includes inline CSS and inline JavaScript. `src/main.js` also injects the same stylesheet at runtime. This protects the page if GitHub Pages caches, blocks, or misroutes external assets. Keep `styles.css` and `src/main.js` as editable source files, then refresh their inline copies in `index.html` after changes.
-
-If the system `node` command is unavailable, run with the bundled Codex Node runtime:
-
-```powershell
-C:\Users\700001256\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe server.mjs
+```bash
+npm run build
 ```
 
-## Key Files
+Preview the built app:
 
-- `index.html`: App shell and stylesheet/script entry points
-- `src/main.js`: Simulated intelligence data, filtering logic, heatmap behavior, rendering functions, and interaction handlers
-- `styles.css`: Full visual system, layout, responsive behavior, sticky heatmap rail, and enterprise UI styling
-- `assets/parallax-logo.svg`: Parallax Data Lab logo asset
-- `server.mjs`: Small static file server for local preview
-- `package.json`: Project metadata and start script
+```bash
+npm run preview
+```
 
-## Design Notes
+## GitHub Pages
 
-The visual system uses the requested Parallax-inspired enterprise palette:
+Do not deploy the raw repository files from the branch root. A Vite app must be built first. If GitHub Pages serves the source `index.html` directly, the page will show the fallback loading message because the browser cannot resolve Vite-only imports.
 
-- Deep navy: `#0B1745`
-- Insight blue: `#1F6AE5`
-- Signal teal: `#16B5A3`
-- Premium gold: `#F5B544`
-- White typography with thin glass borders
+The Vite config uses:
 
-The layout is intentionally closer to an executive weekly intelligence digest, with live operational controls and command-center behavior layered into the experience.
+```js
+base: "./"
+```
+
+That makes the built `dist/` output work from a GitHub Pages project subpath.
+
+Typical deployment flow:
+
+```bash
+npm install
+npm run build
+```
+
+Then deploy the generated `dist/` folder to GitHub Pages.
+
+This repo also includes a GitHub Actions workflow at `.github/workflows/deploy.yml`. If GitHub Pages is configured to deploy from Actions, pushing to `main` will install dependencies, build the Vite app, upload `dist/`, and deploy it.
+
+Recommended GitHub Pages settings:
+
+```text
+Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+```
+
+Then push to `main` and wait for the `Deploy Vite app to GitHub Pages` action to complete.
+
+## Interaction Model
+
+The prototype data is deterministic. Values change only in response to:
+
+- slicer changes
+- signal clicks
+- table sorting
+- heatmap hover/focus detail
+
+There are no timer-driven data changes.
+
+## Current Intelligence Coverage
+
+The simulated data includes:
+
+- escalation response breakdowns
+- corrective action backlog risk
+- compliance deterioration and recovery
+- assignment bottlenecks
+- workflow participation drift
+- open-text fatigue and frustration concerns
+- near-miss narrative clusters
+- contractor participation risk
+- permit review backlog
+- regional recovery signals
+
+This is intended as a scalable product prototype, not a static dashboard screenshot.
