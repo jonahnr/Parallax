@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import parallaxLogo from "../assets/parallax-logo.svg";
 import { filters, signals } from "./data/digestData.js";
 import "./styles.css";
 import {
@@ -127,12 +128,16 @@ function App() {
 function Header() {
   return h(
     "header",
-    { className: "mb-5 grid items-center gap-7 xl:grid-cols-[270px_minmax(340px,1fr)_320px] lg:grid-cols-[250px_1fr]" },
-    h("img", {
-      className: "w-[min(300px,100%)] rounded-lg border border-white/15 bg-white/95 p-3 shadow-2xl",
-      src: "./assets/parallax-logo.svg",
-      alt: "Parallax Data Lab"
-    }),
+    { className: "mb-5 grid items-center gap-7 xl:grid-cols-[300px_minmax(340px,1fr)_320px] lg:grid-cols-[280px_1fr]" },
+    h(
+      "div",
+      { className: "flex min-h-[104px] items-center rounded-lg border border-white/15 bg-white px-5 py-4 shadow-2xl" },
+      h("img", {
+        className: "block h-auto max-h-[74px] w-full object-contain",
+        src: parallaxLogo,
+        alt: "Parallax Data Lab"
+      })
+    ),
     h(
       "div",
       null,
@@ -429,25 +434,54 @@ function Heatmap({ slicers, hoverCell, setHoverCell }) {
 
 function ArchitectureFlow() {
   const stages = [
-    ["Operational Data Sources", "Safety workflows, assignments, observations, open text, and site context."],
-    ["Governed Analytics Layer", "Controlled metrics, refresh rules, lineage, and trusted definitions."],
-    ["Intelligence Detection Engine", "Detects escalation patterns, drift, backlog aging, and compliance deviation."],
-    ["Predictive Risk Modeling", "Scores likelihood, impact, trend acceleration, and action confidence."],
-    ["Executive Prioritization Digest", "Converts dashboards into leadership attention items."],
-    ["Leadership Action", "Routes reviews, interventions, and follow-up accountability."]
+    ["scope", "Operational Data Sources", "Safety workflows, assignments, observations, open text, and site context.", ["Escalation Patterns", "Open Text Signals"]],
+    ["bars", "Governed Analytics Layer", "Controlled metrics, refresh rules, lineage, and trusted definitions.", ["Compliance Deviation", "Corrective Action Aging"]],
+    ["bot", "Intelligence Detection Engine", "Detects escalation patterns, drift, backlog aging, and participation shifts.", ["Behavioral Drift", "Priority Scoring"]],
+    ["trend", "Predictive Risk Modeling", "Scores likelihood, impact, trend acceleration, and action confidence.", ["Risk Acceleration", "Impact Modeling"]],
+    ["map", "Executive Prioritization Digest", "Converts dashboards into leadership attention items and briefing-ready evidence.", ["AI Intelligence Layer", "Top 3 Narrative"]],
+    ["action", "Leadership Action", "Routes reviews, interventions, and follow-up accountability.", ["Intervention Routing", "Decision Cadence"]]
   ];
 
   return h(
     "section",
-    { className: `${panelClass} grid gap-3` },
-    h("h2", { className: "text-sm font-black uppercase" }, "Intelligence Architecture Flow"),
-    stages.map(([title, body], index) =>
-      h(
-        "button",
-        { key: title, className: "grid min-h-20 grid-cols-[34px_1fr] items-center gap-x-3 rounded-lg border border-white/10 bg-white/[.045] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15" },
-        h("span", { className: "row-span-2 grid h-9 w-9 place-items-center rounded-lg border border-parallax-teal/25 bg-parallax-teal/10 font-black text-parallax-teal" }, index + 1),
-        h("strong", null, title),
-        h("em", { className: "text-sm not-italic leading-snug text-parallax-muted" }, body)
+    { className: `${panelClass} grid gap-4` },
+    h(
+      "div",
+      { className: "flex items-center justify-between gap-3" },
+      h("h2", { className: "text-sm font-black uppercase" }, "Intelligence Architecture Flow"),
+      h("span", { className: "rounded-full border border-parallax-teal/30 bg-parallax-teal/10 px-3 py-1 text-[.68rem] font-black uppercase text-parallax-teal" }, "AI Layer")
+    ),
+    h(
+      "div",
+      { className: "relative grid gap-3 before:absolute before:left-[25px] before:top-8 before:h-[calc(100%_-_64px)] before:w-px before:bg-gradient-to-b before:from-parallax-teal before:via-parallax-blue before:to-parallax-gold" },
+      stages.map(([icon, title, body, tags], index) =>
+        h(
+          "button",
+          {
+            key: title,
+            className:
+              "group relative grid min-h-24 grid-cols-[52px_1fr] gap-x-3 rounded-lg border border-white/10 bg-white/[.045] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15 hover:shadow-[0_0_28px_rgba(22,181,163,.12)]"
+          },
+          h(
+            "span",
+            {
+              className:
+                "relative z-10 grid h-12 w-12 place-items-center rounded-lg border border-parallax-teal/30 bg-[#0B1745] text-parallax-teal shadow-[0_0_22px_rgba(22,181,163,.12)] transition group-hover:border-parallax-gold/50 group-hover:text-parallax-gold"
+            },
+            h(Icon, { name: icon, className: "h-6 w-6" })
+          ),
+          h(
+            "span",
+            { className: "min-w-0" },
+            h("span", { className: "mb-1 flex items-center justify-between gap-3" }, h("strong", { className: "text-sm leading-tight" }, title), h("b", { className: "text-xs text-parallax-gold" }, `0${index + 1}`)),
+            h("em", { className: "block text-sm not-italic leading-snug text-parallax-muted" }, body),
+            h(
+              "span",
+              { className: "mt-3 flex flex-wrap gap-1.5" },
+              tags.map((tag) => h("i", { key: tag, className: "rounded-full border border-white/10 bg-white/[.05] px-2 py-1 text-[.65rem] not-italic text-parallax-muted" }, tag))
+            )
+          )
+        )
       )
     )
   );

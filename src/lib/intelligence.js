@@ -95,6 +95,17 @@ export function leadershipItems(slicers, exactRows) {
 
 export function topThings(slicers, exactRows) {
   const selectedIds = new Set();
+  const addItems = (items, pool) => {
+    pool.forEach((item) => {
+      if (!item || selectedIds.has(item.id) || items.length >= 3) return;
+      selectedIds.add(item.id);
+      items.push({
+        ...item,
+        kind: item.direction === "recovery" ? "recovery" : item.signal === "Open Text" ? "open-text" : "risk"
+      });
+    });
+    return items;
+  };
   const recovery = contextPatterns(slicers, {
     ignoreSignal: true,
     ignoreImpact: true,
@@ -112,15 +123,13 @@ export function topThings(slicers, exactRows) {
         ? [...exactRows, ...openText, ...recovery]
         : [...riskRows, ...openText, ...recovery];
 
-  return pool.reduce((items, item) => {
-    if (selectedIds.has(item.id) || items.length >= 3) return items;
-    selectedIds.add(item.id);
-    items.push({
-      ...item,
-      kind: item.direction === "recovery" ? "recovery" : item.signal === "Open Text" ? "open-text" : "risk"
-    });
-    return items;
-  }, []);
+  return [
+    pool,
+    contextPatterns(slicers, { ignoreSignal: true, ignoreImpact: true, ignoreReview: true }),
+    scoredPatterns({ ...slicers, region: "All Regions", division: "All Divisions", selectedSignal: "All Signals" }).sort(
+      (a, b) => b.score - a.score
+    )
+  ].reduce(addItems, []);
 }
 
 export function overallSignal(rows) {
