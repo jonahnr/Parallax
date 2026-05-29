@@ -163,8 +163,7 @@ function App() {
           filterToken,
           leadershipView,
           setLeadershipView
-        }),
-        h(LowerDigest, { slicers, exactRows, contextRows, focusSignal, filterToken })
+        })
       ),
       h(
         "aside",
@@ -173,6 +172,7 @@ function App() {
         h(DecisionMatrix, { rows: contextRows, slicers, focusSignal })
       )
     ),
+    h(LowerDigest, { slicers, exactRows, contextRows, focusSignal, filterToken }),
     h(ReviewLinks)
   );
 }
@@ -618,7 +618,7 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
 
   return h(
     "section",
-    { className: "grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" },
+    { className: "mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" },
     h(
       MiniCard,
       { title: "3. Emerging Risk Patterns", summary: `${emerging.length} active signals / ${openTextCount} open-text clusters`, meta: scope },
