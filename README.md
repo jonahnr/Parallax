@@ -76,6 +76,8 @@ npm run preview
 
 Do not deploy the raw repository files from the branch root. A Vite app must be built first. If GitHub Pages serves the source `index.html` directly, the page will show the fallback loading message because the browser cannot resolve Vite-only imports.
 
+You do not need Node.js installed locally if you use GitHub Actions. See `NO_NODE_DEPLOY.md`.
+
 The Vite config uses:
 
 ```js
