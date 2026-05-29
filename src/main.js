@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import parallaxLogo from "../assets/parallax-logo.svg";
 import { filters, signals } from "./data/digestData.js";
 import "./styles.css";
 import {
@@ -114,12 +113,7 @@ function App() {
         h(LeadershipTable, { rows: leadershipRows, exactCount: exactRows.length, sort, setSort, filterToken }),
         h(LowerDigest, { slicers, contextRows, focusSignal, filterToken })
       ),
-      h(
-        "aside",
-        { className: "sticky top-4 grid max-h-[calc(100vh-32px)] gap-4 overflow-auto max-lg:relative max-lg:top-auto max-lg:max-h-none max-lg:overflow-visible" },
-        h(Heatmap, { slicers, hoverCell, setHoverCell }),
-        h(ArchitectureFlow)
-      )
+      h("aside", { className: "grid content-start gap-4" }, h(Heatmap, { slicers, hoverCell, setHoverCell }), h(ArchitectureFlow))
     ),
     h(ReviewLinks)
   );
@@ -131,12 +125,8 @@ function Header() {
     { className: "mb-5 grid items-center gap-7 xl:grid-cols-[300px_minmax(340px,1fr)_320px] lg:grid-cols-[280px_1fr]" },
     h(
       "div",
-      { className: "flex min-h-[104px] items-center rounded-lg border border-white/15 bg-white px-5 py-4 shadow-2xl" },
-      h("img", {
-        className: "block h-auto max-h-[74px] w-full object-contain",
-        src: parallaxLogo,
-        alt: "Parallax Data Lab"
-      })
+      { className: "flex min-h-[112px] items-center rounded-lg border border-white/15 bg-white px-5 py-4 shadow-2xl" },
+      h(ParallaxLogo)
     ),
     h(
       "div",
@@ -157,6 +147,70 @@ function Header() {
         h("i", { className: "h-2 w-2 animate-softPulse rounded-full bg-parallax-teal shadow-[0_0_18px_#16B5A3]" }),
         "AI Intelligence Active"
       )
+    )
+  );
+}
+
+function ParallaxLogo() {
+  return h(
+    "svg",
+    {
+      className: "block h-auto w-full",
+      viewBox: "0 0 560 150",
+      role: "img",
+      "aria-label": "Parallax Data Lab"
+    },
+    h(
+      "defs",
+      null,
+      h(
+        "linearGradient",
+        { id: "logoBlue", x1: "0", x2: "1", y1: "0", y2: "1" },
+        h("stop", { offset: "0", stopColor: "#1F6AE5" }),
+        h("stop", { offset: "1", stopColor: "#16B5FF" })
+      )
+    ),
+    h(
+      "g",
+      { fill: "none", stroke: "#071D54", strokeLinecap: "round", strokeLinejoin: "round" },
+      h("path", { d: "M35 55 92 20l58 35v67l-58 27-57-27Z", strokeWidth: "9" }),
+      h("path", { d: "M92 20v119M35 122l57 17 58-17", strokeWidth: "7", opacity: ".92" })
+    ),
+    h("rect", { x: "55", y: "80", width: "24", height: "42", rx: "4", fill: "#1F6AE5" }),
+    h("rect", { x: "90", y: "55", width: "24", height: "67", rx: "4", fill: "#1689F5" }),
+    h("rect", { x: "125", y: "24", width: "28", height: "98", rx: "4", fill: "url(#logoBlue)" }),
+    h("path", {
+      d: "M25 118c53 14 105-1 150-59",
+      fill: "none",
+      stroke: "#F5B544",
+      strokeWidth: "8",
+      strokeLinecap: "round"
+    }),
+    h(
+      "text",
+      {
+        x: "190",
+        y: "80",
+        fill: "#F5B544",
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "54",
+        fontWeight: "800",
+        letterSpacing: "1"
+      },
+      "PARALLAX"
+    ),
+    h(
+      "text",
+      {
+        x: "193",
+        y: "125",
+        fill: "#1F6AE5",
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "36",
+        fontWeight: "800",
+        letterSpacing: "8"
+      },
+      "DATA LAB"
     )
   );
 }
@@ -246,9 +300,9 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
       ),
       h(
         "article",
-        { className: softCardClass },
+        { className: `${softCardClass} min-h-60` },
         h("span", { className: "text-sm font-extrabold" }, "Top 3 Things to Know"),
-        things.map((item, index) =>
+        ensureThreeThings(things).map((item, index) =>
           h(
             "div",
             { key: item.id, className: "mt-5 grid grid-cols-[32px_1fr] gap-3" },
@@ -277,6 +331,35 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
       )
     )
   );
+}
+
+function ensureThreeThings(things) {
+  const fallback = [
+    {
+      id: "fallback-escalation",
+      pattern: "Escalation Response Breakdown",
+      why: "Escalation volume is rising while closure speed is slowing, requiring leadership review this week.",
+      kind: "risk"
+    },
+    {
+      id: "fallback-open-text",
+      pattern: "Open Text Fatigue Concern",
+      why: "Narrative observations show fatigue, overtime compression, and missed rest-window signals above baseline.",
+      kind: "open-text"
+    },
+    {
+      id: "fallback-recovery",
+      pattern: "Operational Recovery Opportunity",
+      why: "Several regions show recoverable follow-up queues where supervisor cadence can reduce aging risk.",
+      kind: "recovery"
+    }
+  ];
+  const ids = new Set(things.map((item) => item.id));
+  const padded = [...things];
+  fallback.forEach((item) => {
+    if (padded.length < 3 && !ids.has(item.id)) padded.push(item);
+  });
+  return padded.slice(0, 3);
 }
 
 function PatternIcon({ signal }) {
@@ -444,7 +527,7 @@ function ArchitectureFlow() {
 
   return h(
     "section",
-    { className: `${panelClass} grid gap-4` },
+    { className: `${panelClass} grid gap-4 overflow-visible` },
     h(
       "div",
       { className: "flex items-center justify-between gap-3" },
@@ -453,7 +536,10 @@ function ArchitectureFlow() {
     ),
     h(
       "div",
-      { className: "relative grid gap-3 before:absolute before:left-[25px] before:top-8 before:h-[calc(100%_-_64px)] before:w-px before:bg-gradient-to-b before:from-parallax-teal before:via-parallax-blue before:to-parallax-gold" },
+      { className: "relative grid gap-3" },
+      h("span", {
+        className: "pointer-events-none absolute left-[25px] top-8 h-[calc(100%-64px)] w-px bg-gradient-to-b from-parallax-teal via-parallax-blue to-parallax-gold"
+      }),
       stages.map(([icon, title, body, tags], index) =>
         h(
           "button",
