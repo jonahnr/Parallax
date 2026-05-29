@@ -221,7 +221,7 @@ function reportingPeriodLabel(timeRange) {
   const generated = addDays(weekBeforeRecentEnd, 1);
   return {
     primary: `${formatDigestDate(weekBeforeRecentStart)} - ${formatDigestDate(weekBeforeRecentEnd)}`,
-    secondary: `${timeRange} view / week before most recent completed week`,
+    secondary: "Current Reporting Period",
     generated: `${formatDigestDate(generated)} 12:00 AM`
   };
 }
@@ -851,7 +851,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell }) {
 }
 
 function DecisionMatrix({ rows, slicers, focusSignal }) {
-  const candidates = rows.filter((item) => item.direction !== "recovery").slice(0, 7);
+  const candidates = rows.filter((item) => item.direction !== "recovery").slice(0, 5);
   const top = candidates[0] || rows[0];
   const avgScore = rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length) : 0;
   const highCount = rows.filter((item) => item.impact === "High").length;
@@ -873,54 +873,48 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
       h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl text-red-400" }, highCount), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "high impact")),
       h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl text-parallax-gold" }, actionCount), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "actionable"))
     ),
-    h(
-      "div",
-      { className: "relative aspect-[1.15] rounded-lg border border-white/10 bg-[#071033]/45 p-4" },
-      h("span", { className: "absolute left-3 top-3 text-[.65rem] font-black uppercase text-parallax-muted" }, "Likelihood"),
-      h("span", { className: "absolute bottom-3 right-3 text-[.65rem] font-black uppercase text-parallax-muted" }, "Impact"),
-      h("span", { className: "absolute left-4 right-4 top-1/2 h-px bg-white/10" }),
-      h("span", { className: "absolute bottom-4 top-4 left-1/2 w-px bg-white/10" }),
-      candidates.map((item, index) => {
-        const x = clamp(18 + item.score * 0.72 + index * 1.8, 14, 88);
-        const y = clamp(88 - (item.delta + item.score / 2), 12, 84);
-        const size = item.impact === "High" ? 16 : item.impact === "Medium" ? 13 : 11;
-        return h("button", {
-          key: item.id,
-          title: `${item.pattern} / ${item.score}`,
-          className: "absolute rounded-full border border-white/40 transition hover:scale-125 hover:border-white",
-          style: {
-            left: `${x}%`,
-            top: `${y}%`,
-            width: `${size}px`,
-            height: `${size}px`,
-            background: item.color,
-            boxShadow: `0 0 22px ${item.color}55`
-          },
-          onClick: () => focusSignal(item.signal)
-        });
-      })
-    ),
     top &&
       h(
         "article",
-        { className: "rounded-lg border border-white/10 bg-white/[.04] p-3 text-sm text-parallax-muted" },
-        h("span", { className: "mb-2 flex items-center gap-2" }, h(PatternIcon, { signal: top.signal, compact: true }), h("strong", { className: "text-white" }, "Recommended Leadership Focus")),
-        h("p", null, h("strong", { className: "block text-white" }, top.pattern), top.why),
-        h("button", { className: "mt-3 rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-xs font-black uppercase text-parallax-gold", onClick: () => focusSignal(top.signal) }, "Focus signal")
+        { className: "rounded-lg border border-parallax-gold/30 bg-parallax-gold/10 p-4 text-sm text-parallax-muted shadow-[0_0_30px_rgba(245,181,68,.10)]" },
+        h("span", { className: "mb-3 flex items-center gap-2" }, h(PatternIcon, { signal: top.signal, compact: true }), h("strong", { className: "text-white" }, "Primary Insight To Act On")),
+        h("p", null, h("strong", { className: "mb-1 block text-lg leading-tight text-white" }, top.pattern), top.why),
+        h(
+          "div",
+          { className: "mt-4 grid grid-cols-3 gap-2 text-center" },
+          h("span", { className: "rounded-md bg-white/10 p-2" }, h("b", { className: "block text-white" }, top.score), h("em", { className: "text-[.62rem] not-italic text-parallax-muted" }, "score")),
+          h("span", { className: "rounded-md bg-white/10 p-2" }, h("b", { className: "block text-white" }, `${top.delta > 0 ? "+" : ""}${top.delta}`), h("em", { className: "text-[.62rem] not-italic text-parallax-muted" }, "change")),
+          h("span", { className: "rounded-md bg-white/10 p-2" }, h("b", { className: "block text-white" }, top.impact), h("em", { className: "text-[.62rem] not-italic text-parallax-muted" }, "impact"))
+        ),
+        h("button", { className: "mt-4 rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-xs font-black uppercase text-parallax-gold", onClick: () => focusSignal(top.signal) }, "Focus signal")
       ),
     h(
       "div",
-      { className: "grid gap-2" },
-      candidates.slice(0, 3).map((item) =>
+      { className: "grid gap-3" },
+      candidates.slice(0, 4).map((item, index) =>
         h(
           "button",
           {
             key: item.id,
-            className: "grid grid-cols-[1fr_auto] gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm transition hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
+            className: "grid gap-2 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm transition hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
             onClick: () => focusSignal(item.signal)
           },
-          h("span", null, h("strong", { className: "block text-white" }, item.pattern), h("em", { className: "not-italic text-parallax-muted" }, item.region)),
-          h("b", { className: "text-parallax-gold" }, item.score)
+          h(
+            "span",
+            { className: "grid grid-cols-[28px_1fr_auto] items-center gap-2" },
+            h("b", { className: "grid h-7 w-7 place-items-center rounded-full text-xs text-white", style: { background: item.color } }, index + 1),
+            h("strong", { className: "min-w-0 text-white" }, item.pattern),
+            h("b", { className: "text-parallax-gold" }, item.score)
+          ),
+          h("span", { className: "text-parallax-muted" }, item.region, " / ", item.signal),
+          h(
+            "span",
+            { className: "h-2 overflow-hidden rounded-full bg-white/10" },
+            h("i", {
+              className: "block h-full rounded-full",
+              style: { width: `${clamp(item.score, 18, 96)}%`, background: item.color }
+            })
+          )
         )
       )
     )
