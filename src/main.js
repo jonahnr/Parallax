@@ -652,7 +652,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell }) {
 
   return h(
     "section",
-    { className: `${panelClass} sticky top-3 z-10 overflow-x-auto` },
+    { className: `${panelClass} overflow-x-auto` },
     h("div", { className: "mb-4 flex items-center justify-between gap-4" }, h("h2", { className: "text-sm font-black uppercase" }, "Operational Signal Heatmap"), h("span", { className: "text-xs font-extrabold text-parallax-gold" }, slicers.timeRange)),
     h(
       "div",
