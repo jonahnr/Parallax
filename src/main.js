@@ -60,43 +60,67 @@ function Icon({ name, className = "h-5 w-5" }) {
 }
 
 function Sparkline({ values, color, token }) {
-  const points = values.map((value, index) => `${(index / (values.length - 1)) * 100},${100 - value}`).join(" ");
-  const first = values[0];
-  const last = values[values.length - 1];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(max - min, 1);
+  const points = values
+    .map((value, index) => {
+      const x = 6 + (index / (values.length - 1)) * 108;
+      const y = 30 - ((value - min) / spread) * 22;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const firstY = 30 - ((values[0] - min) / spread) * 22;
+  const lastY = 30 - ((values[values.length - 1] - min) / spread) * 22;
   return h(
     "svg",
-    { key: token, className: "h-12 w-full min-w-0", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
-    h("line", { x1: 0, x2: 100, y1: 50, y2: 50, stroke: "rgba(255,255,255,.16)", strokeWidth: "1", strokeDasharray: "3 4" }),
+    { key: token, className: "block h-10 w-full min-w-[88px]", viewBox: "0 0 120 40", preserveAspectRatio: "none" },
+    h("line", { x1: 6, x2: 114, y1: 30, y2: 30, stroke: "rgba(255,255,255,.16)", strokeWidth: "1", strokeDasharray: "3 4" }),
     h("polyline", {
       points,
       fill: "none",
       stroke: color,
-      strokeWidth: "4",
+      strokeWidth: "3",
       strokeLinecap: "round",
       strokeLinejoin: "round",
       strokeDasharray: 360,
       className: "animate-chartDraw"
     }),
-    values.map((value, index) =>
-      h("circle", {
+    values.map((value, index) => {
+      const x = 6 + (index / (values.length - 1)) * 108;
+      const y = 30 - ((value - min) / spread) * 22;
+      return h("circle", {
         key: `${index}-${value}`,
-        cx: (index / (values.length - 1)) * 100,
-        cy: 100 - value,
-        r: index === 0 || index === values.length - 1 ? 3.4 : 2.5,
-        fill: "#071033",
+        cx: x,
+        cy: y,
+        r: index === 0 || index === values.length - 1 ? 3.2 : 2.1,
+        fill: index === values.length - 1 ? color : "#071033",
         stroke: color,
-        strokeWidth: index === 0 || index === values.length - 1 ? 3 : 2
-      })
-    ),
+        strokeWidth: 2
+      });
+    }),
     h("circle", {
-      cx: 100,
-      cy: 100 - last,
-      r: 5.2,
+      cx: 6,
+      cy: firstY,
+      r: 5,
+      fill: color,
+      opacity: ".12"
+    }),
+    h("circle", {
+      cx: 114,
+      cy: lastY,
+      r: 5.5,
       fill: color,
       opacity: ".22"
-    }),
-    h("text", { x: 0, y: clamp(100 - first - 7, 8, 92), fill: "rgba(255,255,255,.62)", fontSize: "9", fontWeight: "800" }, "start"),
-    h("text", { x: 76, y: clamp(100 - last - 7, 8, 92), fill: color, fontSize: "9", fontWeight: "900" }, "now")
+    })
+  );
+}
+
+function MicroTrend({ values, color, token }) {
+  return h(
+    "div",
+    { className: "min-w-0 overflow-hidden rounded-md border border-white/10 bg-[#071033]/35 px-2 py-1" },
+    h(Sparkline, { values, color, token })
   );
 }
 
@@ -146,7 +170,7 @@ function App() {
         "aside",
         { className: "grid content-start gap-4", style: { position: "relative", top: "auto" } },
         h(Heatmap, { slicers, hoverCell, setHoverCell }),
-        h(ArchitectureFlow)
+        h(DecisionMatrix, { rows: contextRows, slicers, focusSignal })
       )
     ),
     h(ReviewLinks)
@@ -543,7 +567,7 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
             h(
               "td",
               { className: "border-b border-white/10 p-3" },
-              h(Sparkline, { values: item.trend.map((value) => clamp(value + item.delta / 4, 10, 92)), color: rankColors[index % rankColors.length], token: `${filterToken}-${item.id}` }),
+              h(MicroTrend, { values: item.trend.map((value) => clamp(value + item.delta / 4, 10, 92)), color: rankColors[index % rankColors.length], token: `${filterToken}-${item.id}` }),
               h("span", { className: "mt-1 block text-xs text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts ${comparisonLabelFromToken(filterToken)}`)
             ),
             h("td", { className: "border-b border-white/10 p-3" }, h("strong", { className: "block" }, item.region), h("span", { className: "text-parallax-muted" }, item.division)),
@@ -565,10 +589,12 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
     relevantRows.filter((item) => item.signal === "Compliance"),
     contextRows.filter((item) => item.signal === "Compliance")
   ).slice(0, cardLimit);
-  const openTextCount = fillRows(
+  const openTextRows = fillRows(
     relevantRows.filter((item) => item.signal === "Open Text"),
     contextRows.filter((item) => item.signal === "Open Text")
-  ).length;
+  );
+  const openText = openTextRows.slice(0, cardLimit);
+  const openTextCount = openTextRows.length;
   const recovery = fillRows(
     relevantRows.filter((item) => item.direction === "recovery"),
     contextRows.filter((item) => item.direction === "recovery")
@@ -577,7 +603,7 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
 
   return h(
     "section",
-    { className: "grid gap-4 md:grid-cols-2 2xl:grid-cols-4" },
+    { className: "grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" },
     h(
       MiniCard,
       { title: "3. Emerging Risk Patterns", summary: `${emerging.length} active signals / ${openTextCount} open-text clusters`, meta: scope },
@@ -606,7 +632,7 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
             h("em", { className: "not-italic" }, `${item.delta > 0 ? "+" : ""}${item.delta}% ${comparison}`),
             h("span", { className: "mt-1 block text-xs text-parallax-gold" }, `${item.region} / ${item.review}`)
           ),
-          h(Sparkline, { values: item.trend, color: item.color, token: `${filterToken}-follow-${item.id}` })
+          h(MicroTrend, { values: item.trend, color: item.color, token: `${filterToken}-follow-${item.id}` })
         )
       ),
       h(
@@ -651,6 +677,12 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
           )
         )
       )
+    ),
+    h(
+      MiniCard,
+      { title: "7. Open Text Concern Signals", summary: `${openTextCount} narrative clusters`, meta: `${slicers.region} / ${slicers.division}` },
+      h(MiniMetricStrip, { rows: openText, label: "narrative severity" }),
+      openText.map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal("Open Text"), openText: true, comparison }))
     )
   );
 }
@@ -667,7 +699,7 @@ function fillRows(primary, fallback) {
 function MiniCard({ title, summary, meta, children }) {
   return h(
     "article",
-    { className: `${panelClass} grid max-h-[620px] content-start gap-3 overflow-hidden` },
+    { className: `${panelClass} grid max-h-[520px] content-start gap-3 overflow-y-auto pr-2` },
     h("div", { className: "grid gap-1" }, h("h2", { className: "text-sm font-black uppercase" }, title), summary && h("p", { className: "text-xs font-extrabold text-parallax-gold" }, summary), meta && h("p", { className: "text-xs text-parallax-muted" }, meta)),
     children
   );
@@ -693,7 +725,7 @@ function ComplianceMovement({ rows, sourceRows, comparison, filterToken, focusSi
       ),
       h("b", { className: "text-3xl" }, score)
     ),
-    h(Sparkline, { values: trend.map((value) => clamp(value + score / 10, 12, 90)), color: "#F5B544", token: `${filterToken}-compliance-score` }),
+    h(MicroTrend, { values: trend.map((value) => clamp(value + score / 10, 12, 90)), color: "#F5B544", token: `${filterToken}-compliance-score` }),
     h(
       "div",
       { className: "grid gap-2" },
@@ -818,58 +850,77 @@ function Heatmap({ slicers, hoverCell, setHoverCell }) {
   );
 }
 
-function ArchitectureFlow() {
-  const stages = [
-    ["scope", "Operational Data Sources", "Safety workflows, assignments, observations, open text, and site context.", ["Escalation Patterns", "Open Text Signals"]],
-    ["bars", "Governed Analytics Layer", "Controlled metrics, refresh rules, lineage, and trusted definitions.", ["Compliance Deviation", "Corrective Action Aging"]],
-    ["bot", "Intelligence Detection Engine", "Detects escalation patterns, drift, backlog aging, and participation shifts.", ["Behavioral Drift", "Priority Scoring"]],
-    ["trend", "Predictive Risk Modeling", "Scores likelihood, impact, trend acceleration, and action confidence.", ["Risk Acceleration", "Impact Modeling"]],
-    ["map", "Executive Prioritization Digest", "Converts dashboards into leadership attention items and briefing-ready evidence.", ["AI Intelligence Layer", "Top 3 Narrative"]],
-    ["action", "Leadership Action", "Routes reviews, interventions, and follow-up accountability.", ["Intervention Routing", "Decision Cadence"]]
-  ];
+function DecisionMatrix({ rows, slicers, focusSignal }) {
+  const candidates = rows.filter((item) => item.direction !== "recovery").slice(0, 7);
+  const top = candidates[0] || rows[0];
+  const avgScore = rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length) : 0;
+  const highCount = rows.filter((item) => item.impact === "High").length;
+  const actionCount = rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").length;
 
   return h(
     "section",
-    { className: `${panelClass} grid gap-4 overflow-visible` },
+    { className: `${panelClass} grid gap-4` },
     h(
       "div",
       { className: "flex items-center justify-between gap-3" },
-      h("h2", { className: "text-sm font-black uppercase" }, "Intelligence Architecture Flow"),
-      h("span", { className: "rounded-full border border-parallax-teal/30 bg-parallax-teal/10 px-3 py-1 text-[.68rem] font-black uppercase text-parallax-teal" }, "AI Layer")
+      h("h2", { className: "text-sm font-black uppercase" }, "Decision Intelligence Matrix"),
+      h("span", { className: "rounded-full border border-parallax-teal/30 bg-parallax-teal/10 px-3 py-1 text-[.68rem] font-black uppercase text-parallax-teal" }, slicers.timeRange)
     ),
     h(
       "div",
-      { className: "relative grid gap-3" },
-      h("span", {
-        className: "pointer-events-none absolute left-[25px] top-8 h-[calc(100%-64px)] w-px bg-gradient-to-b from-parallax-teal via-parallax-blue to-parallax-gold"
-      }),
-      stages.map(([icon, title, body, tags], index) =>
+      { className: "grid grid-cols-3 gap-2 text-center" },
+      h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl" }, avgScore), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "avg risk")),
+      h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl text-red-400" }, highCount), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "high impact")),
+      h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl text-parallax-gold" }, actionCount), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "actionable"))
+    ),
+    h(
+      "div",
+      { className: "relative aspect-[1.15] rounded-lg border border-white/10 bg-[#071033]/45 p-4" },
+      h("span", { className: "absolute left-3 top-3 text-[.65rem] font-black uppercase text-parallax-muted" }, "Likelihood"),
+      h("span", { className: "absolute bottom-3 right-3 text-[.65rem] font-black uppercase text-parallax-muted" }, "Impact"),
+      h("span", { className: "absolute left-4 right-4 top-1/2 h-px bg-white/10" }),
+      h("span", { className: "absolute bottom-4 top-4 left-1/2 w-px bg-white/10" }),
+      candidates.map((item, index) => {
+        const x = clamp(18 + item.score * 0.72 + index * 1.8, 14, 88);
+        const y = clamp(88 - (item.delta + item.score / 2), 12, 84);
+        const size = item.impact === "High" ? 16 : item.impact === "Medium" ? 13 : 11;
+        return h("button", {
+          key: item.id,
+          title: `${item.pattern} / ${item.score}`,
+          className: "absolute rounded-full border border-white/40 transition hover:scale-125 hover:border-white",
+          style: {
+            left: `${x}%`,
+            top: `${y}%`,
+            width: `${size}px`,
+            height: `${size}px`,
+            background: item.color,
+            boxShadow: `0 0 22px ${item.color}55`
+          },
+          onClick: () => focusSignal(item.signal)
+        });
+      })
+    ),
+    top &&
+      h(
+        "article",
+        { className: "rounded-lg border border-white/10 bg-white/[.04] p-3 text-sm text-parallax-muted" },
+        h("span", { className: "mb-2 flex items-center gap-2" }, h(PatternIcon, { signal: top.signal, compact: true }), h("strong", { className: "text-white" }, "Recommended Leadership Focus")),
+        h("p", null, h("strong", { className: "block text-white" }, top.pattern), top.why),
+        h("button", { className: "mt-3 rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-xs font-black uppercase text-parallax-gold", onClick: () => focusSignal(top.signal) }, "Focus signal")
+      ),
+    h(
+      "div",
+      { className: "grid gap-2" },
+      candidates.slice(0, 3).map((item) =>
         h(
           "button",
           {
-            key: title,
-            className:
-              "group relative grid min-h-24 grid-cols-[52px_1fr] gap-x-3 rounded-lg border border-white/10 bg-white/[.045] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15 hover:shadow-[0_0_28px_rgba(22,181,163,.12)]"
+            key: item.id,
+            className: "grid grid-cols-[1fr_auto] gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm transition hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
+            onClick: () => focusSignal(item.signal)
           },
-          h(
-            "span",
-            {
-              className:
-                "relative z-10 grid h-12 w-12 place-items-center rounded-lg border border-parallax-teal/30 bg-[#0B1745] text-parallax-teal shadow-[0_0_22px_rgba(22,181,163,.12)] transition group-hover:border-parallax-gold/50 group-hover:text-parallax-gold"
-            },
-            h(Icon, { name: icon, className: "h-6 w-6" })
-          ),
-          h(
-            "span",
-            { className: "min-w-0" },
-            h("span", { className: "mb-1 flex items-center justify-between gap-3" }, h("strong", { className: "text-sm leading-tight" }, title), h("b", { className: "text-xs text-parallax-gold" }, `0${index + 1}`)),
-            h("em", { className: "block text-sm not-italic leading-snug text-parallax-muted" }, body),
-            h(
-              "span",
-              { className: "mt-3 flex flex-wrap gap-1.5" },
-              tags.map((tag) => h("i", { key: tag, className: "rounded-full border border-white/10 bg-white/[.05] px-2 py-1 text-[.65rem] not-italic text-parallax-muted" }, tag))
-            )
-          )
+          h("span", null, h("strong", { className: "block text-white" }, item.pattern), h("em", { className: "not-italic text-parallax-muted" }, item.region)),
+          h("b", { className: "text-parallax-gold" }, item.score)
         )
       )
     )
@@ -889,7 +940,7 @@ function ReviewLinks() {
   return h(
     "section",
     { className: `${panelClass} mt-4` },
-    h("h2", { className: "mb-4 text-sm font-black uppercase" }, "7. Review Links"),
+    h("h2", { className: "mb-4 text-sm font-black uppercase" }, "8. Review Links"),
     h(
       "div",
       { className: "grid gap-3 md:grid-cols-2 xl:grid-cols-6" },
