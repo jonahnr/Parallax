@@ -128,7 +128,12 @@ function App() {
         }),
         h(LowerDigest, { slicers, exactRows, contextRows, focusSignal, filterToken })
       ),
-      h("aside", { className: "grid content-start gap-4" }, h(Heatmap, { slicers, hoverCell, setHoverCell }), h(ArchitectureFlow))
+      h(
+        "aside",
+        { className: "grid content-start gap-4", style: { position: "relative", top: "auto" } },
+        h(Heatmap, { slicers, hoverCell, setHoverCell }),
+        h(ArchitectureFlow)
+      )
     ),
     h(ReviewLinks)
   );
@@ -426,9 +431,28 @@ function ensureThreeThings(things) {
   return padded.slice(0, 3);
 }
 
-function PatternIcon({ signal }) {
+function signalTheme(signal) {
+  return (
+    {
+      Escalations: "border-red-400/30 bg-red-500/15 text-red-300 shadow-[0_0_20px_rgba(239,68,68,.14)]",
+      "Actions / CA": "border-orange-300/35 bg-orange-400/15 text-orange-200 shadow-[0_0_20px_rgba(249,115,22,.14)]",
+      Assignments: "border-violet-300/35 bg-violet-500/15 text-violet-200 shadow-[0_0_20px_rgba(124,58,237,.14)]",
+      Workflows: "border-parallax-blue/40 bg-parallax-blue/15 text-blue-200 shadow-[0_0_20px_rgba(31,106,229,.14)]",
+      Compliance: "border-parallax-gold/40 bg-parallax-gold/15 text-parallax-gold shadow-[0_0_20px_rgba(245,181,68,.14)]",
+      "Open Text": "border-parallax-teal/40 bg-parallax-teal/15 text-parallax-teal shadow-[0_0_20px_rgba(22,181,163,.14)]"
+    }[signal] || "border-white/10 bg-white/5 text-parallax-muted"
+  );
+}
+
+function PatternIcon({ signal, compact = false }) {
   const icon = { Escalations: "alert", "Actions / CA": "clock", Assignments: "group", Workflows: "refresh", Compliance: "bars", "Open Text": "bot" }[signal] || "trend";
-  return h("span", { className: "grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/5 text-parallax-muted" }, h(Icon, { name: icon, className: "h-5 w-5" }));
+  return h(
+    "span",
+    {
+      className: `grid ${compact ? "h-9 w-9" : "h-10 w-10"} place-items-center rounded-lg border ${signalTheme(signal)}`
+    },
+    h(Icon, { name: icon, className: compact ? "h-4.5 w-4.5" : "h-5 w-5" })
+  );
 }
 
 function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterToken, leadershipView, setLeadershipView }) {
@@ -536,9 +560,10 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
           {
             key: item.id,
             className:
-              "grid grid-cols-[minmax(0,1fr)_minmax(82px,108px)] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
+              "grid grid-cols-[38px_minmax(0,1fr)_minmax(82px,108px)] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
             onClick: () => focusSignal(item.signal)
           },
+          h(PatternIcon, { signal: item.signal, compact: true }),
           h(
             "span",
             null,
@@ -576,7 +601,14 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
               "grid grid-cols-[38px_1fr] gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
             onClick: () => focusSignal(item.signal)
           },
-          h(Icon, { name: "check", className: "h-8 w-8 text-parallax-teal" }),
+          h(
+            "span",
+            {
+              className:
+                "grid h-9 w-9 place-items-center rounded-lg border border-parallax-teal/40 bg-parallax-teal/15 text-parallax-teal shadow-[0_0_20px_rgba(22,181,163,.14)]"
+            },
+            h(Icon, { name: "check", className: "h-5 w-5" })
+          ),
           h(
             "span",
             null,
@@ -624,7 +656,7 @@ function MiniSignalRow({ item, onClick, openText = false, comparison = "vs. comp
   return h(
     "button",
     { className: "grid grid-cols-[38px_1fr] gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15", onClick },
-    h(PatternIcon, { signal: openText ? "Open Text" : item.signal }),
+    h(PatternIcon, { signal: openText ? "Open Text" : item.signal, compact: true }),
     h(
       "span",
       null,
@@ -652,7 +684,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell }) {
 
   return h(
     "section",
-    { className: `${panelClass} overflow-x-auto` },
+    { className: `${panelClass} overflow-x-auto`, style: { position: "relative", top: "auto", alignSelf: "start" } },
     h("div", { className: "mb-4 flex items-center justify-between gap-4" }, h("h2", { className: "text-sm font-black uppercase" }, "Operational Signal Heatmap"), h("span", { className: "text-xs font-extrabold text-parallax-gold" }, slicers.timeRange)),
     h(
       "div",
