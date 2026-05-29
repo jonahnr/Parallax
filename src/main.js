@@ -61,9 +61,12 @@ function Icon({ name, className = "h-5 w-5" }) {
 
 function Sparkline({ values, color, token }) {
   const points = values.map((value, index) => `${(index / (values.length - 1)) * 100},${100 - value}`).join(" ");
+  const first = values[0];
+  const last = values[values.length - 1];
   return h(
     "svg",
     { key: token, className: "h-12 w-full min-w-0", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+    h("line", { x1: 0, x2: 100, y1: 50, y2: 50, stroke: "rgba(255,255,255,.16)", strokeWidth: "1", strokeDasharray: "3 4" }),
     h("polyline", {
       points,
       fill: "none",
@@ -79,10 +82,21 @@ function Sparkline({ values, color, token }) {
         key: `${index}-${value}`,
         cx: (index / (values.length - 1)) * 100,
         cy: 100 - value,
-        r: 1.8,
-        fill: color
+        r: index === 0 || index === values.length - 1 ? 3.4 : 2.5,
+        fill: "#071033",
+        stroke: color,
+        strokeWidth: index === 0 || index === values.length - 1 ? 3 : 2
       })
-    )
+    ),
+    h("circle", {
+      cx: 100,
+      cy: 100 - last,
+      r: 5.2,
+      fill: color,
+      opacity: ".22"
+    }),
+    h("text", { x: 0, y: clamp(100 - first - 7, 8, 92), fill: "rgba(255,255,255,.62)", fontSize: "9", fontWeight: "800" }, "start"),
+    h("text", { x: 76, y: clamp(100 - last - 7, 8, 92), fill: color, fontSize: "9", fontWeight: "900" }, "now")
   );
 }
 
@@ -161,7 +175,7 @@ function Header({ slicers }) {
       { className: `${panelClass} grid gap-2 lg:col-span-2 xl:col-span-1` },
       h("span", { className: "text-sm text-parallax-muted" }, "Reporting Period"),
       h("strong", { className: "text-lg" }, reporting.primary),
-      h("em", { className: "not-italic text-sm text-parallax-muted" }, "Generated: May 12, 2025 12:00 AM"),
+      h("em", { className: "not-italic text-sm text-parallax-muted" }, `Generated: ${reporting.generated}`),
       h("span", { className: "text-xs font-extrabold uppercase text-parallax-gold" }, reporting.secondary),
       h(
         "b",
@@ -174,14 +188,29 @@ function Header({ slicers }) {
 }
 
 function reportingPeriodLabel(timeRange) {
-  return (
-    {
-      "Current Week": { primary: "May 5 - May 11, 2025", secondary: "Current Week" },
-      "Prior 7 Days": { primary: "Apr 28 - May 4, 2025", secondary: "Prior 7-Day View" },
-      "4-Week Rolling": { primary: "Apr 14 - May 11, 2025", secondary: "4-Week Rolling View" },
-      "Quarter to Date": { primary: "Jan 1 - May 11, 2025", secondary: "Quarter-to-Date View" }
-    }[timeRange] || { primary: "May 5 - May 11, 2025", secondary: timeRange }
-  );
+  const today = new Date();
+  const currentDay = today.getDay();
+  const daysSinceMonday = (currentDay + 6) % 7;
+  const currentWeekMonday = addDays(today, -daysSinceMonday);
+  const weekBeforeRecentStart = addDays(currentWeekMonday, -14);
+  const weekBeforeRecentEnd = addDays(currentWeekMonday, -8);
+  const generated = addDays(weekBeforeRecentEnd, 1);
+  return {
+    primary: `${formatDigestDate(weekBeforeRecentStart)} - ${formatDigestDate(weekBeforeRecentEnd)}`,
+    secondary: `${timeRange} view / week before most recent completed week`,
+    generated: `${formatDigestDate(generated)} 12:00 AM`
+  };
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatDigestDate(date) {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function ParallaxLogo() {
@@ -527,18 +556,23 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
 }
 
 function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken }) {
+  const cardLimit = 3;
   const comparison = comparisonLabel(slicers.timeRange);
   const relevantRows = exactRows.length ? exactRows : contextRows;
-  const emerging = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, 5);
-  const followUps = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, 5);
-  const openText = fillRows(
+  const emerging = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, cardLimit);
+  const followUps = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, cardLimit);
+  const complianceRows = fillRows(
+    relevantRows.filter((item) => item.signal === "Compliance"),
+    contextRows.filter((item) => item.signal === "Compliance")
+  ).slice(0, cardLimit);
+  const openTextCount = fillRows(
     relevantRows.filter((item) => item.signal === "Open Text"),
     contextRows.filter((item) => item.signal === "Open Text")
-  ).slice(0, 5);
+  ).length;
   const recovery = fillRows(
     relevantRows.filter((item) => item.direction === "recovery"),
     contextRows.filter((item) => item.direction === "recovery")
-  ).slice(0, 5);
+  ).slice(0, cardLimit);
   const scope = `${slicers.region} / ${slicers.division} / ${slicers.selectedSignal}`;
 
   return h(
@@ -546,7 +580,7 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
     { className: "grid gap-4 md:grid-cols-2 2xl:grid-cols-4" },
     h(
       MiniCard,
-      { title: "3. Emerging Risk Patterns", summary: `${emerging.length} active signals`, meta: scope },
+      { title: "3. Emerging Risk Patterns", summary: `${emerging.length} active signals / ${openTextCount} open-text clusters`, meta: scope },
       h(MiniMetricStrip, { rows: emerging, label: comparison }),
       emerging.map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal(item.signal), comparison }))
     ),
@@ -584,9 +618,8 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
     ),
     h(
       MiniCard,
-      { title: "5. Open Text Concern Signals", summary: `${openText.length} narrative clusters`, meta: slicers.region },
-      h(MiniMetricStrip, { rows: openText, label: "narrative severity" }),
-      openText.map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal("Open Text"), openText: true, comparison }))
+      { title: "5. Compliance / Scoring Movement", summary: `${complianceRows.length} scoring signals`, meta: comparison },
+      h(ComplianceMovement, { rows: complianceRows, sourceRows: relevantRows, comparison, filterToken, focusSignal })
     ),
     h(
       MiniCard,
@@ -634,10 +667,67 @@ function fillRows(primary, fallback) {
 function MiniCard({ title, summary, meta, children }) {
   return h(
     "article",
-    { className: `${panelClass} grid content-start gap-3` },
+    { className: `${panelClass} grid max-h-[620px] content-start gap-3 overflow-hidden` },
     h("div", { className: "grid gap-1" }, h("h2", { className: "text-sm font-black uppercase" }, title), summary && h("p", { className: "text-xs font-extrabold text-parallax-gold" }, summary), meta && h("p", { className: "text-xs text-parallax-muted" }, meta)),
     children
   );
+}
+
+function ComplianceMovement({ rows, sourceRows, comparison, filterToken, focusSignal }) {
+  const score = complianceScore(sourceRows);
+  const delta = clamp(80 - score, -8, 12);
+  const trend = rows[0]?.trend || [74, 76, 75, 73, 72, 70, 71, 69, 68, score];
+  const regions = ["West Region", "South Region", "Central Region", "North Region"];
+
+  return h(
+    "div",
+    { className: "grid gap-3" },
+    h(
+      "div",
+      { className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3" },
+      h(
+        "span",
+        null,
+        h("strong", { className: "block text-white" }, "Average Compliance Score"),
+        h("em", { className: `not-italic ${delta > 0 ? "text-red-400" : "text-parallax-teal"}` }, `${delta > 0 ? "v" : "^"} ${Math.abs(delta)} pts ${comparison}`)
+      ),
+      h("b", { className: "text-3xl" }, score)
+    ),
+    h(Sparkline, { values: trend.map((value) => clamp(value + score / 10, 12, 90)), color: "#F5B544", token: `${filterToken}-compliance-score` }),
+    h(
+      "div",
+      { className: "grid gap-2" },
+      rows.map((item, index) =>
+        h(
+          "button",
+          {
+            key: item.id,
+            className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
+            onClick: () => focusSignal("Compliance")
+          },
+          h("span", null, h("strong", { className: "block text-white" }, item.pattern), h("em", { className: "not-italic" }, item.region)),
+          h("b", { className: item.direction === "recovery" ? "text-parallax-teal" : "text-parallax-gold" }, `${scoreByRegion(score, index, item.direction)}`)
+        )
+      )
+    ),
+    h(
+      "div",
+      { className: "grid gap-2 rounded-lg border border-white/10 bg-white/[.035] p-3 text-sm text-parallax-muted" },
+      regions.map((region, index) =>
+        h(
+          "span",
+          { key: region, className: "grid grid-cols-[1fr_auto] gap-3" },
+          h("strong", { className: "text-white" }, region),
+          h("em", { className: `not-italic ${index === 2 ? "text-red-400" : index === 3 ? "text-parallax-teal" : "text-parallax-muted"}` }, `${scoreByRegion(score, index)} / ${index === 3 ? "^" : "v"} ${index + 2} pts`)
+        )
+      )
+    )
+  );
+}
+
+function scoreByRegion(score, index, direction = "up") {
+  const adjustment = direction === "recovery" ? index + 2 : -(index + 1) * 2;
+  return clamp(score + adjustment, 61, 94);
 }
 
 function MiniMetricStrip({ rows, label }) {
