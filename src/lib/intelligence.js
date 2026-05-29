@@ -22,6 +22,39 @@ export function rangeBoost(timeRange) {
   }[timeRange] || 0;
 }
 
+export function comparisonLabel(timeRange) {
+  return (
+    {
+      "Current Week": "vs. prior week",
+      "Prior 7 Days": "vs. previous 7 days",
+      "4-Week Rolling": "vs. rolling baseline",
+      "Quarter to Date": "vs. quarter baseline"
+    }[timeRange] || "vs. comparison period"
+  );
+}
+
+export function comparedToLabel(timeRange) {
+  return (
+    {
+      "Current Week": ["Apr 28 - May 4, 2025", "Prior 7 Days"],
+      "Prior 7 Days": ["Apr 21 - Apr 27, 2025", "Previous 7 Days"],
+      "4-Week Rolling": ["Apr 14 - May 11, 2025", "Rolling Baseline"],
+      "Quarter to Date": ["Jan 1 - May 11, 2025", "QTD Baseline"]
+    }[timeRange] || ["Configured comparison", "Baseline"]
+  );
+}
+
+export function baselineLabel(timeRange) {
+  return (
+    {
+      "Current Week": "4-Week Rolling + Prior 30 Days",
+      "Prior 7 Days": "Previous 7-Day Rolling Average",
+      "4-Week Rolling": "Prior 4-Week Rolling Average",
+      "Quarter to Date": "Prior Quarter + 12-Week Trend"
+    }[timeRange] || "Operational Baseline"
+  );
+}
+
 export function motionSeed(slicers, index = 0) {
   const key = Object.values(slicers).join("|");
   const hash = key.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
@@ -39,14 +72,14 @@ export function scoredPatterns(slicers) {
   }));
 }
 
-export function contextPatterns(slicers, options = {}) {
-  const { ignoreSignal = false, ignoreImpact = false, ignoreReview = false } = options;
+export function scopedRows(slicers, options = {}) {
+  const { ignoreSignal = false, ignoreImpact = false, ignoreReview = false, ignoreDivision = false } = options;
   let rows = scoredPatterns(slicers);
 
   if (slicers.region !== "All Regions") {
     rows = rows.filter((item) => item.region === slicers.region || item.region === "All Regions");
   }
-  if (slicers.division !== "All Divisions") {
+  if (!ignoreDivision && slicers.division !== "All Divisions") {
     rows = rows.filter((item) => item.division === slicers.division);
   }
   if (!ignoreImpact && slicers.impact !== "All Impact") {
@@ -62,6 +95,10 @@ export function contextPatterns(slicers, options = {}) {
   return rows.sort((a, b) => b.score - a.score);
 }
 
+export function contextPatterns(slicers, options = {}) {
+  return scopedRows(slicers, options);
+}
+
 export function activePatterns(slicers, sort) {
   const rows = contextPatterns(slicers);
   return [...rows].sort((a, b) => {
@@ -70,11 +107,11 @@ export function activePatterns(slicers, sort) {
   });
 }
 
-export function leadershipItems(slicers, exactRows) {
+export function leadershipItems(slicers, exactRows, limit = 5) {
   const seen = new Set();
   const items = [];
   const add = (item, related = false) => {
-    if (!item || seen.has(item.id) || items.length >= 5) return;
+    if (!item || seen.has(item.id) || items.length >= limit) return;
     seen.add(item.id);
     items.push({ ...item, related });
   };
@@ -145,15 +182,38 @@ export function signalState(score) {
 }
 
 export function heatValue(slicers, region, signal) {
-  const rows = patterns.filter(
+  const rows = scoredPatterns({ ...slicers, selectedSignal: "All Signals" }).filter(
     (item) => (region === "All Regions" || item.region === region || item.region === "All Regions") && item.signal === signal
   );
   const fallback = 46 + ((region.length * 7 + signal.length * 5 + slicers.timeRange.length) % 28);
   return clamp(
-    rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length + rangeBoost(slicers.timeRange)) : fallback,
+    rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length) : fallback,
     30,
     98
   );
+}
+
+export function signalDirectionMetric(slicers, signal) {
+  const region = slicers.region === "All Regions" ? "West Region" : slicers.region;
+  const current = heatValue(slicers, region, signal);
+  const previousBoost =
+    {
+      "Current Week": -4,
+      "Prior 7 Days": -2,
+      "4-Week Rolling": -7,
+      "Quarter to Date": -10
+    }[slicers.timeRange] || -4;
+  const matchingRows = scoredPatterns(slicers).filter(
+    (item) => (region === "All Regions" || item.region === region || item.region === "All Regions") && item.signal === signal
+  );
+  const trendDelta = matchingRows.length
+    ? Math.round(matchingRows.reduce((sum, item) => sum + (item.trend.at(-1) - item.trend[0]), 0) / matchingRows.length / 3)
+    : Math.round((signal.length + region.length) % 9) - 3;
+  const delta = clamp(current - (current + previousBoost - trendDelta), -18, 24);
+  const direction = delta >= 4 ? "up" : delta <= -4 ? "down" : "flat";
+  const level = Math.abs(delta) >= 12 ? "Severe" : Math.abs(delta) >= 7 ? "Elevated" : Math.abs(delta) >= 3 ? "Watch" : "Stable";
+
+  return { current, delta, direction, level };
 }
 
 export function heatLevel(value) {
