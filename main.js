@@ -514,6 +514,7 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
     ["pattern", "Pattern"],
     ["why", "Why It Matters"],
     ["impact", "Impact"],
+    ["score", "Criticality"],
     ["delta", "Trend vs Comparison"],
     ["region", "Affected Scope"],
     ["review", "Review"]
@@ -564,6 +565,20 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
             h("td", { className: "border-b border-white/10 p-3" }, h("div", { className: "grid grid-cols-[40px_1fr] items-center gap-3" }, h(PatternIcon, { signal: item.signal }), h("span", null, h("strong", { className: "block" }, item.pattern), item.related && h("em", { className: "text-[.7rem] not-italic font-extrabold uppercase text-parallax-gold" }, "Related priority")))),
             h("td", { className: "border-b border-white/10 p-3 text-parallax-muted" }, item.why),
             h("td", { className: "border-b border-white/10 p-3" }, h("mark", { className: `rounded-md px-3 py-2 text-white ${item.impact === "High" ? "bg-red-500/30" : item.impact === "Medium" ? "bg-parallax-gold text-[#171100]" : "bg-parallax-teal text-[#062519]"}` }, item.impact)),
+            h(
+              "td",
+              { className: "border-b border-white/10 p-3" },
+              h(
+                "span",
+                { className: "grid min-w-20 gap-1" },
+                h("b", { className: "text-xl text-white" }, item.score),
+                h(
+                  "i",
+                  { className: "h-1.5 overflow-hidden rounded-full bg-white/10 not-italic" },
+                  h("span", { className: "block h-full rounded-full", style: { width: `${clamp(item.score, 20, 98)}%`, background: rankColors[index % rankColors.length] } })
+                )
+              )
+            ),
             h(
               "td",
               { className: "border-b border-white/10 p-3" },
@@ -853,9 +868,12 @@ function Heatmap({ slicers, hoverCell, setHoverCell }) {
 function DecisionMatrix({ rows, slicers, focusSignal }) {
   const candidates = rows.filter((item) => item.direction !== "recovery").slice(0, 5);
   const top = candidates[0] || rows[0];
+  const second = candidates[1];
+  const recovery = rows.find((item) => item.direction === "recovery");
   const avgScore = rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length) : 0;
   const highCount = rows.filter((item) => item.impact === "High").length;
   const actionCount = rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").length;
+  const scope = `${slicers.region} / ${slicers.division}`;
 
   return h(
     "section",
@@ -876,48 +894,44 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
     top &&
       h(
         "article",
-        { className: "rounded-lg border border-parallax-gold/30 bg-parallax-gold/10 p-4 text-sm text-parallax-muted shadow-[0_0_30px_rgba(245,181,68,.10)]" },
-        h("span", { className: "mb-3 flex items-center gap-2" }, h(PatternIcon, { signal: top.signal, compact: true }), h("strong", { className: "text-white" }, "Primary Insight To Act On")),
-        h("p", null, h("strong", { className: "mb-1 block text-lg leading-tight text-white" }, top.pattern), top.why),
+        { className: "rounded-lg border border-parallax-blue/30 bg-parallax-blue/10 p-4 text-sm text-parallax-muted shadow-[0_0_30px_rgba(31,106,229,.10)]" },
+        h("span", { className: "mb-3 flex items-center gap-2" }, h(Icon, { name: "bot", className: "h-6 w-6 text-parallax-teal" }), h("strong", { className: "text-white" }, "AI Weekly Summary")),
+        h(
+          "p",
+          { className: "leading-relaxed" },
+          `This reporting period is being driven by ${top.pattern.toLowerCase()} across ${top.region}. `,
+          second ? `${second.pattern} is the next strongest contributor, creating a combined leadership review queue for ${scope}. ` : "",
+          recovery ? `${recovery.pattern.toLowerCase()} is the clearest recovery signal and can be used as the response model.` : "No strong recovery signal is currently offsetting the elevated risk pattern."
+        ),
         h(
           "div",
-          { className: "mt-4 grid grid-cols-3 gap-2 text-center" },
-          h("span", { className: "rounded-md bg-white/10 p-2" }, h("b", { className: "block text-white" }, top.score), h("em", { className: "text-[.62rem] not-italic text-parallax-muted" }, "score")),
-          h("span", { className: "rounded-md bg-white/10 p-2" }, h("b", { className: "block text-white" }, `${top.delta > 0 ? "+" : ""}${top.delta}`), h("em", { className: "text-[.62rem] not-italic text-parallax-muted" }, "change")),
-          h("span", { className: "rounded-md bg-white/10 p-2" }, h("b", { className: "block text-white" }, top.impact), h("em", { className: "text-[.62rem] not-italic text-parallax-muted" }, "impact"))
+          { className: "mt-4 grid gap-2" },
+          h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "Suggested intervention"), h("em", { className: "not-italic" }, interventionFor(top.signal))),
+          h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "What changed"), h("em", { className: "not-italic" }, `${top.signal} moved ${top.delta > 0 ? "+" : ""}${top.delta} pts ${comparisonLabel(slicers.timeRange)}.`))
         ),
-        h("button", { className: "mt-4 rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-xs font-black uppercase text-parallax-gold", onClick: () => focusSignal(top.signal) }, "Focus signal")
+        h("button", { className: "mt-4 rounded-md border border-parallax-teal/50 bg-parallax-teal/10 px-3 py-2 text-xs font-black uppercase text-parallax-teal", onClick: () => focusSignal(top.signal) }, "Focus summary signal")
       ),
     h(
       "div",
-      { className: "grid gap-3" },
-      candidates.slice(0, 4).map((item, index) =>
-        h(
-          "button",
-          {
-            key: item.id,
-            className: "grid gap-2 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm transition hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
-            onClick: () => focusSignal(item.signal)
-          },
-          h(
-            "span",
-            { className: "grid grid-cols-[28px_1fr_auto] items-center gap-2" },
-            h("b", { className: "grid h-7 w-7 place-items-center rounded-full text-xs text-white", style: { background: item.color } }, index + 1),
-            h("strong", { className: "min-w-0 text-white" }, item.pattern),
-            h("b", { className: "text-parallax-gold" }, item.score)
-          ),
-          h("span", { className: "text-parallax-muted" }, item.region, " / ", item.signal),
-          h(
-            "span",
-            { className: "h-2 overflow-hidden rounded-full bg-white/10" },
-            h("i", {
-              className: "block h-full rounded-full",
-              style: { width: `${clamp(item.score, 18, 96)}%`, background: item.color }
-            })
-          )
-        )
+      { className: "grid gap-2 rounded-lg border border-white/10 bg-white/[.04] p-3 text-sm text-parallax-muted" },
+      h("strong", { className: "text-white" }, "Copilot Watchlist"),
+      candidates.slice(0, 3).map((item) =>
+        h("button", { key: item.id, className: "grid grid-cols-[1fr_auto] gap-3 border-t border-white/10 pt-2 text-left transition hover:text-parallax-teal", onClick: () => focusSignal(item.signal) }, h("span", null, item.pattern), h("b", { className: "text-parallax-gold" }, item.impact))
       )
     )
+  );
+}
+
+function interventionFor(signal) {
+  return (
+    {
+      Escalations: "Open a regional escalation closure review and assign aging owners.",
+      "Actions / CA": "Escalate corrective action audit and verify overdue action quality.",
+      Assignments: "Rebalance assignment ownership and increase supervisor completion cadence.",
+      Workflows: "Run workflow participation huddles at the lowest-performing sites.",
+      Compliance: "Trigger score movement review and audit exception documentation.",
+      "Open Text": "Review narrative clusters for fatigue, frustration, and near-miss language."
+    }[signal] || "Review the highest-confidence operational signal with regional leadership."
   );
 }
 
