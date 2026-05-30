@@ -207,7 +207,7 @@ export function signalDirectionMetric(slicers, signal) {
     (item) => (region === "All Regions" || item.region === region || item.region === "All Regions") && item.signal === signal
   );
   const trendDelta = matchingRows.length
-    ? Math.round(matchingRows.reduce((sum, item) => sum + (item.trend.at(-1) - item.trend[0]), 0) / matchingRows.length / 3)
+    ? Math.round(matchingRows.reduce((sum, item) => sum + (item.trend[item.trend.length - 1] - item.trend[0]), 0) / matchingRows.length / 3)
     : Math.round((signal.length + region.length) % 9) - 3;
   const delta = clamp(current - (current + previousBoost - trendDelta), -18, 24);
   const direction = delta >= 4 ? "up" : delta <= -4 ? "down" : "flat";

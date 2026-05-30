@@ -453,7 +453,7 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
     { icon: "trend", label: "Accelerating Risks", value: metrics.acceleratingRisks.current, delta: metrics.acceleratingRisks.delta, tone: "text-parallax-gold" },
     { icon: "map", label: "Regions Requiring Review", value: metrics.reviewRegions.current, delta: metrics.reviewRegions.delta, tone: "text-parallax-teal" }
   ];
-  const changeItems = buildChangeItems(slicers, things);
+  const changeItems = buildChangeItems(slicers, things, rows);
 
   return h(
     "section",
@@ -723,7 +723,7 @@ function changeMetricForSignal(slicers, signal, rows, index = 0) {
     }[slicers.timeRange] || 3.2;
   const ranked = candidates
     .map((item) => {
-      const raw = Math.round((item.trend.at(-1) - item.trend[0]) / timeScale);
+      const raw = Math.round((item.trend[item.trend.length - 1] - item.trend[0]) / timeScale);
       const directional = item.direction === "recovery" ? -Math.abs(raw || item.delta || 4) : item.direction === "down" ? -Math.abs(raw || 3) : raw || item.delta || 0;
       const shaped = clamp(directional + ((index % 3) - 1) * 2, -16, 20);
       return { item, delta: shaped };
