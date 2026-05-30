@@ -438,15 +438,15 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
 }
 
 function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
+  const [changesOpen, setChangesOpen] = useState(false);
   const score = overallSignal(rows);
   const [label, level] = signalState(score);
   const things = topThings(slicers, rows);
   const signalColor = level === "low" ? "text-parallax-teal" : level === "medium" ? "text-parallax-gold" : level === "high" ? "text-orange-400" : "text-red-400";
   const metrics = executiveMetrics(slicers, rows);
   const scoreDelta = score - metrics.previousScore;
-  const criticality = score >= 84 ? "Critical" : score >= 70 ? "High" : score >= 55 ? "Medium" : "Low";
-  const criticalityScore = clamp((score / 10).toFixed(1), 1, 10);
   const comparison = comparisonLabel(slicers.timeRange);
+  const riskDrivers = scoreDrivers(rows, scoreDelta);
   const kpis = [
     { icon: "alert", label: "Critical Risks", value: metrics.criticalRisks.current, delta: metrics.criticalRisks.delta, tone: "text-red-400" },
     { icon: "alert", label: "High Impact Risks", value: metrics.highImpactRisks.current, delta: metrics.highImpactRisks.delta, tone: "text-red-400" },
@@ -461,10 +461,10 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
     h("h2", { className: "mb-4 text-sm font-black uppercase" }, "1. Executive Summary"),
     h(
       "div",
-      { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-2 xl:grid-cols-[1.55fr_repeat(5,minmax(0,1fr))]" },
+      { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-2 xl:grid-cols-[1.7fr_repeat(4,minmax(0,1fr))]" },
       h(
         "article",
-        { className: "grid min-h-48 place-items-center border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
+        { className: "grid min-h-48 gap-3 border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
         h("span", { className: "text-xs font-extrabold uppercase text-parallax-muted" }, "Risk Score (/100)"),
         h(
           "div",
@@ -473,7 +473,19 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
           h("b", { className: "pb-3 text-xl text-parallax-muted" }, "/100")
         ),
         h("strong", { className: `text-sm uppercase ${signalColor}` }, label),
-        h("em", { className: `mt-1 block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison))
+        h("em", { className: `block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison)),
+        h(
+          "div",
+          { className: "grid grid-cols-2 gap-2 text-left" },
+          riskDrivers.map((item) =>
+            h(
+              "span",
+              { key: item.label, className: "rounded-md border border-white/10 bg-white/[.05] px-2 py-1.5" },
+              h("b", { className: `block text-xs ${item.tone}` }, item.value),
+              h("em", { className: "text-[.62rem] not-italic uppercase text-parallax-muted" }, item.label)
+            )
+          )
+        )
       ),
       kpis.map((item) =>
         h(
@@ -484,20 +496,21 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
           h("b", { className: "text-4xl font-black text-white" }, item.value),
           h("em", { className: `text-xs not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(item.delta, "", comparison))
         )
-      ),
-      h(
-        "article",
-        { className: "grid min-h-48 place-items-center p-4 text-center" },
-        h(Icon, { name: "trend", className: "h-9 w-9 text-red-400" }),
-        h("span", { className: "text-xs font-extrabold text-parallax-muted" }, "Operational Criticality"),
-        h("b", { className: `text-3xl font-black uppercase ${signalColor}` }, criticality),
-        h("em", { className: "not-italic text-red-400" }, `${criticalityScore} / 10`)
       )
     ),
     h(
       "article",
       { className: "mt-4 rounded-lg border border-white/10 bg-white/[.04] p-4" },
-      h("div", { className: "mb-3 flex flex-wrap items-center justify-between gap-3" }, h("span", { className: "text-sm font-extrabold" }, "5 Things Changing"), h("em", { className: "text-xs not-italic text-parallax-muted" }, comparison)),
+      h(
+        "div",
+        { className: "mb-3 flex flex-wrap items-center justify-between gap-3" },
+        h("span", { className: "text-sm font-extrabold" }, "What Changed This Week"),
+        h(
+          "button",
+          { className: "rounded-md border border-parallax-teal/40 bg-parallax-teal/10 px-3 py-1.5 text-xs font-black uppercase text-parallax-teal transition hover:bg-parallax-teal/20", onClick: () => setChangesOpen((open) => !open) },
+          changesOpen ? "Hide detail" : "Show detail"
+        )
+      ),
       h(
         "div",
         { className: "grid gap-2 md:grid-cols-5" },
@@ -507,7 +520,13 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
             { key: item.label, className: "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg border border-white/10 bg-white/[.035] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15", onClick: () => focusSignal(item.signal) },
             h("strong", { className: "truncate text-sm text-white" }, item.label),
             h("span", { className: "flex items-center gap-2" }, h("b", { className: item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts`), h(DirectionArrow, { direction: item.direction })),
-            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, `${item.summary} / ${item.signal}`)
+            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, changesOpen ? `${item.summary} / ${item.signal} / ${comparison}` : item.signal),
+            changesOpen &&
+              h(
+                "span",
+                { className: "col-span-2 rounded-md border border-white/10 bg-[#071033]/35 p-2 text-xs text-parallax-muted" },
+                item.delta > 0 ? "Increasing pressure versus the comparison period; review contributing sites before escalation ages further." : item.delta < 0 ? "Improving versus the comparison period; verify whether the recovery pattern can be repeated elsewhere." : "Flat versus the comparison period; monitor for emerging movement."
+              )
           )
         )
       )
@@ -552,6 +571,22 @@ function previousComparableRows(slicers, rows) {
 
 function metricDelta(current, previous) {
   return { current, delta: current - previous };
+}
+
+function scoreDrivers(rows, scoreDelta) {
+  const activeRows = rows.length ? rows : [];
+  const avgDelta = activeRows.length ? Math.round(activeRows.reduce((sum, item) => sum + item.delta, 0) / activeRows.length) : scoreDelta;
+  const highExposure = new Set(activeRows.filter((item) => item.score >= 70).map((item) => item.region)).size;
+  const recurrence = activeRows.filter((item) => item.delta > 8).length;
+  const unresolved = activeRows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").length;
+  const severe = activeRows.filter((item) => item.score >= 84 || item.impact === "High").length;
+  return [
+    { label: "Trend", value: avgDelta > 0 ? `+${avgDelta}` : `${avgDelta}`, tone: avgDelta > 0 ? "text-red-400" : avgDelta < 0 ? "text-parallax-teal" : "text-parallax-muted" },
+    { label: "Exposure", value: `${highExposure} regions`, tone: highExposure >= 3 ? "text-red-400" : "text-parallax-gold" },
+    { label: "Recurrence", value: `${recurrence} signals`, tone: recurrence >= 3 ? "text-red-400" : "text-parallax-gold" },
+    { label: "Unresolved", value: `${unresolved} actions`, tone: unresolved >= 5 ? "text-red-400" : "text-parallax-gold" },
+    { label: "Severity", value: `${severe} high`, tone: severe >= 4 ? "text-red-400" : "text-parallax-gold" }
+  ];
 }
 
 function deltaLabel(delta, unit = "", comparison = "") {
@@ -674,6 +709,15 @@ function PatternIcon({ signal, compact = false }) {
   );
 }
 
+function rankingDrivers(item) {
+  const drivers = [];
+  drivers.push(item.delta > 8 ? "trend" : item.delta < 0 ? "recovery" : "steady");
+  drivers.push(item.score >= 84 ? "severity" : "exposure");
+  if (item.review === "Needs Review" || item.review === "Assigned") drivers.push("unresolved");
+  if (item.impact === "High") drivers.push("high impact");
+  return drivers.slice(0, 4);
+}
+
 function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterToken, leadershipView, setLeadershipView }) {
   const headers = [
     ["id", "Rank"],
@@ -745,6 +789,11 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
                     "i",
                     { className: "h-1.5 overflow-hidden rounded-full bg-white/10 not-italic" },
                     h("span", { className: "block h-full rounded-full", style: { width: `${clamp(item.score, 20, 98)}%`, background: rankColors[index % rankColors.length] } })
+                  ),
+                  h(
+                    "span",
+                    { className: "mt-1 flex max-w-[220px] flex-wrap gap-1" },
+                    rankingDrivers(item).map((driver) => h("em", { key: driver, className: "rounded-full bg-white/10 px-2 py-0.5 text-[.62rem] not-italic text-parallax-muted" }, driver))
                   )
                 )
               ),
@@ -987,7 +1036,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
     signal: slicers.selectedSignal === "All Signals" ? "Escalations" : slicers.selectedSignal
   };
   const regionRisk = (region) => Math.round(signals.reduce((sum, signal) => sum + heatValue(slicers, region, signal), 0) / signals.length);
-  const detailValue = heatmapMode === "total" ? regionRisk(detail.region) : heatValue(slicers, detail.region, detail.signal);
+  const detailValue = heatmapMode === "total" || heatmapMode === "map" ? regionRisk(detail.region) : heatValue(slicers, detail.region, detail.signal);
   const regionValues = regions.map((region) => ({ region, value: regionRisk(region) }));
   const regionsAboveThreshold = regionValues.filter((item) => item.value >= 70).length;
   const highestSignal = signals
@@ -1019,6 +1068,15 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
             onClick: () => setHeatmapMode("total")
           },
           "Total risk"
+        ),
+        h(
+          "button",
+          {
+            className: `inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-[.68rem] font-black uppercase ${heatmapMode === "map" ? "border-parallax-blue bg-parallax-blue/15 text-blue-200" : "border-white/10 bg-white/[.04] text-parallax-muted"}`,
+            onClick: () => setHeatmapMode("map")
+          },
+          h(Icon, { name: "map", className: "h-3.5 w-3.5" }),
+          "USA map"
         )
       )
     ),
@@ -1045,7 +1103,8 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
             })
           ])
         )
-      : h(
+      : heatmapMode === "total"
+      ? h(
           "div",
           { className: "grid min-w-[430px] gap-3" },
           regions.map((region) => {
@@ -1063,12 +1122,13 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
               h("b", { className: "text-xl text-white" }, value)
             );
           })
-        ),
+        )
+      : h(UsaRiskMap, { regions: regionValues, setHoverCell }),
     h(
       "div",
       { className: "mt-4 rounded-lg border border-white/10 bg-white/[.045] p-4" },
-      h("strong", null, `${detail.region} / ${heatmapMode === "total" ? "Total Risk Score" : detail.signal}`),
-      heatmapMode === "total"
+      h("strong", null, `${detail.region} / ${heatmapMode === "total" || heatmapMode === "map" ? "Total Risk Score" : detail.signal}`),
+      heatmapMode === "total" || heatmapMode === "map"
         ? h(
             "dl",
             { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
@@ -1097,14 +1157,60 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
   );
 }
 
+function UsaRiskMap({ regions, setHoverCell }) {
+  const positions = {
+    "West Region": { x: 74, y: 112, w: 120, h: 108, path: "M46 112 104 78 186 105 196 194 126 234 62 196Z" },
+    "Central Region": { x: 196, y: 102, w: 122, h: 118, path: "M192 104 315 96 332 198 268 236 196 198Z" },
+    "South Region": { x: 232, y: 214, w: 156, h: 92, path: "M202 214 342 202 402 250 354 312 244 294Z" },
+    "North Region": { x: 310, y: 86, w: 146, h: 106, path: "M310 92 418 70 480 112 450 188 338 204Z" }
+  };
+  const colorFor = (value) => (value >= 85 ? "#EF4444" : value >= 72 ? "#F97316" : value >= 58 ? "#F5B544" : "#16B5A3");
+  return h(
+    "div",
+    { className: "min-w-[430px] rounded-lg border border-white/10 bg-[#071033]/45 p-3" },
+    h(
+      "svg",
+      { className: "block h-[300px] w-full", viewBox: "0 0 520 340", role: "img", "aria-label": "USA operational risk map by region" },
+      h("path", {
+        d: "M46 112 104 78 186 105 310 92 418 70 480 112 450 188 402 250 354 312 244 294 126 234 62 196Z",
+        fill: "rgba(255,255,255,.035)",
+        stroke: "rgba(255,255,255,.18)",
+        strokeWidth: 2
+      }),
+      regions.map(({ region, value }) => {
+        const pos = positions[region];
+        const color = colorFor(value);
+        return h(
+          "g",
+          {
+            key: region,
+            className: "cursor-pointer transition hover:opacity-90",
+            onMouseEnter: () => setHoverCell({ region, signal: "Total Risk" }),
+            onFocus: () => setHoverCell({ region, signal: "Total Risk" }),
+            tabIndex: 0
+          },
+          h("path", {
+            d: pos.path,
+            fill: color,
+            fillOpacity: value >= 85 ? 0.72 : value >= 72 ? 0.58 : 0.42,
+            stroke: color,
+            strokeWidth: 2,
+            style: { filter: "drop-shadow(0 0 12px rgba(31,106,229,.26))" }
+          }),
+          h("text", { x: pos.x + pos.w / 2, y: pos.y + pos.h / 2 - 5, textAnchor: "middle", fill: "white", fontSize: 16, fontWeight: 900 }, region.replace(" Region", "")),
+          h("text", { x: pos.x + pos.w / 2, y: pos.y + pos.h / 2 + 18, textAnchor: "middle", fill: "white", fontSize: 24, fontWeight: 900 }, value)
+        );
+      }),
+      h("text", { x: 30, y: 324, fill: "rgba(255,255,255,.62)", fontSize: 12, fontWeight: 700 }, "Regional total risk score, filtered by current slicers")
+    )
+  );
+}
+
 function DecisionMatrix({ rows, slicers, focusSignal }) {
   const candidates = rows.filter((item) => item.direction !== "recovery").slice(0, 5);
   const top = candidates[0] || rows[0];
   const second = candidates[1];
   const recovery = rows.find((item) => item.direction === "recovery");
-  const avgScore = rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length) : 0;
-  const highCount = rows.filter((item) => item.impact === "High").length;
-  const actionCount = rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").length;
   const scope = `${slicers.region} / ${slicers.division}`;
 
   return h(
@@ -1115,13 +1221,6 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
       { className: "flex items-center justify-between gap-3" },
       h("h2", { className: "text-sm font-black uppercase" }, "AI Decision Briefing"),
       h("span", { className: "rounded-full border border-parallax-teal/30 bg-parallax-teal/10 px-3 py-1 text-[.68rem] font-black uppercase text-parallax-teal" }, slicers.timeRange)
-    ),
-    h(
-      "div",
-      { className: "grid grid-cols-3 gap-2 text-center" },
-      h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl" }, avgScore), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "avg risk")),
-      h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl text-red-400" }, highCount), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "high impact")),
-      h("span", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3" }, h("b", { className: "block text-2xl text-parallax-gold" }, actionCount), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "actionable"))
     ),
     top &&
       h(
