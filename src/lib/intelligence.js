@@ -34,14 +34,37 @@ export function comparisonLabel(timeRange) {
 }
 
 export function comparedToLabel(timeRange) {
+  const today = new Date();
+  const currentDay = today.getDay();
+  const daysSinceMonday = (currentDay + 6) % 7;
+  const currentWeekMonday = addDays(today, -daysSinceMonday);
+  const recentCompleteStart = addDays(currentWeekMonday, -7);
+  const reportingStart = addDays(currentWeekMonday, -14);
+  const reportingEnd = addDays(currentWeekMonday, -8);
+  const formatRange = (start, end) => `${formatShortDate(start)} - ${formatShortDate(end)}`;
   return (
     {
-      "Current Week": ["Apr 28 - May 4, 2025", "Prior 7 Days"],
-      "Prior 7 Days": ["Apr 21 - Apr 27, 2025", "Previous 7 Days"],
-      "4-Week Rolling": ["Apr 14 - May 11, 2025", "Rolling Baseline"],
-      "Quarter to Date": ["Jan 1 - May 11, 2025", "QTD Baseline"]
+      "Current Week": [formatRange(recentCompleteStart, addDays(currentWeekMonday, -1)), "Most Recent Completed Week"],
+      "Prior 7 Days": [formatRange(addDays(reportingStart, -7), addDays(reportingStart, -1)), "Previous 7 Days"],
+      "4-Week Rolling": [formatRange(addDays(reportingEnd, -27), reportingEnd), "Rolling Baseline"],
+      "Quarter to Date": [formatRange(startOfQuarter(reportingEnd), reportingEnd), "QTD Baseline"]
     }[timeRange] || ["Configured comparison", "Baseline"]
   );
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function startOfQuarter(date) {
+  return new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3, 1);
+}
+
+function formatShortDate(date) {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function baselineLabel(timeRange) {

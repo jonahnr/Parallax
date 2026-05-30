@@ -6,6 +6,7 @@ import {
   activePatterns,
   baselineLabel,
   clamp,
+  complianceScore,
   comparedToLabel,
   comparisonLabel,
   contextPatterns,
@@ -212,16 +213,21 @@ function Header({ slicers }) {
   );
 }
 
-function reportingPeriodLabel(timeRange) {
+function currentReportingWindow() {
   const today = new Date();
   const currentDay = today.getDay();
   const daysSinceMonday = (currentDay + 6) % 7;
   const currentWeekMonday = addDays(today, -daysSinceMonday);
-  const weekBeforeRecentStart = addDays(currentWeekMonday, -14);
-  const weekBeforeRecentEnd = addDays(currentWeekMonday, -8);
-  const generated = addDays(weekBeforeRecentEnd, 1);
+  const start = addDays(currentWeekMonday, -14);
+  const end = addDays(currentWeekMonday, -8);
+  const generated = addDays(end, 1);
+  return { start, end, generated };
+}
+
+function reportingPeriodLabel(timeRange) {
+  const { start, end, generated } = currentReportingWindow();
   return {
-    primary: `${formatDigestDate(weekBeforeRecentStart)} - ${formatDigestDate(weekBeforeRecentEnd)}`,
+    primary: `${formatDigestDate(start)} - ${formatDigestDate(end)}`,
     secondary: "Current Reporting Period",
     generated: `${formatDigestDate(generated)} 12:00 AM`
   };
@@ -236,6 +242,14 @@ function addDays(date, days) {
 
 function formatDigestDate(date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function riskItemLabel(value) {
+  return value === "All Signals" ? "All Risk Items" : value;
+}
+
+function riskItemScopeLabel(value) {
+  return String(value).replace(/All Signals/g, "All Risk Items");
 }
 
 function ParallaxLogo() {
@@ -306,7 +320,7 @@ function SlicerBar({ slicers, updateSlicer }) {
   const fields = [
     ["Region", "region", filters.regions],
     ["Business Unit", "division", filters.divisions],
-    ["Workflow Type", "selectedSignal", ["All Signals", ...signals]],
+    ["Risk Item Type", "selectedSignal", ["All Signals", ...signals]],
     ["Time Range", "timeRange", filters.timeRanges],
     ["Impact", "impact", filters.impacts],
     ["Review State", "review", filters.reviewStates]
@@ -327,7 +341,7 @@ function SlicerBar({ slicers, updateSlicer }) {
             value: slicers[key],
             onChange: (event) => updateSlicer(key, event.target.value)
           },
-          options.map((option) => h("option", { key: option, value: option }, option))
+          options.map((option) => h("option", { key: option, value: option }, riskItemLabel(option)))
         )
       )
     )
@@ -336,10 +350,11 @@ function SlicerBar({ slicers, updateSlicer }) {
 
 function MetaStrip({ slicers }) {
   const comparedTo = comparedToLabel(slicers.timeRange);
+  const reporting = reportingPeriodLabel(slicers.timeRange);
   const items = [
     ["user", "Prepared for", "VP, Safety Operations", slicers.division],
     ["scope", "Scope", slicers.division, slicers.region],
-    ["refresh", "Data Refresh", "May 11, 2025 11:45 PM", "Live simulation"],
+    ["refresh", "Data Refresh", `${reporting.generated.replace("12:00 AM", "11:45 PM")}`, "Live simulation"],
     ["bars", "Compared To", comparedTo[0], comparedTo[1]],
     ["trend", "Baseline", baselineLabel(slicers.timeRange), comparisonLabel(slicers.timeRange)]
   ];
@@ -464,7 +479,7 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
       { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-2 xl:grid-cols-[1.7fr_repeat(4,minmax(0,1fr))]" },
       h(
         "article",
-        { className: "grid min-h-44 place-items-center border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
+        { className: "group relative grid min-h-44 place-items-center border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
         h("span", { className: "text-xs font-extrabold uppercase text-parallax-muted" }, "Risk Score (/100)"),
         h(
           "div",
@@ -473,7 +488,8 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
           h("b", { className: "pb-3 text-xl text-parallax-muted" }, "/100")
         ),
         h("strong", { className: `text-sm uppercase ${signalColor}` }, label),
-        h("em", { className: `block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison))
+        h("em", { className: `block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison)),
+        h(MetricTooltip, { text: metricDefinition("Risk Score (/100)") })
       ),
       kpis.map((item) =>
         h(KpiFlipCard, {
@@ -483,7 +499,9 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
           flipped: flippedKpi === item.label,
           onFlip: () => setFlippedKpi(flippedKpi === item.label ? null : item.label),
           rows: kpiRiskRows(item.label, rows),
-          focusSignal
+          focusSignal,
+          definition: metricDefinition(item.label),
+          confidence: confidenceForRows(kpiRiskRows(item.label, rows))
         })
       )
     ),
@@ -509,7 +527,7 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
             { key: item.label, className: "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg border border-white/10 bg-white/[.035] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15", onClick: () => focusSignal(item.signal) },
             h("strong", { className: "truncate text-sm text-white" }, item.label),
             h("span", { className: "flex items-center gap-2" }, h("i", { className: `h-3 w-3 rounded-full not-italic ${changeSeverity(item.delta)}`, title: severityLabel(item.delta) }), h("b", { className: item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts`), h(DirectionArrow, { direction: item.direction })),
-            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, changesOpen ? `${item.signal} / ${comparison}` : item.signal),
+            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, changesOpen ? `${riskItemLabel(item.signal)} / ${comparison}` : riskItemLabel(item.signal)),
             changesOpen &&
               h(
                 "span",
@@ -524,10 +542,10 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
   );
 }
 
-function KpiFlipCard({ item, comparison, flipped, onFlip, rows, focusSignal }) {
+function KpiFlipCard({ item, comparison, flipped, onFlip, rows, focusSignal, definition, confidence }) {
   return h(
     "article",
-    { className: "min-h-44 border-white/10 p-0 text-center md:border-r [perspective:1200px]" },
+    { className: "group relative min-h-44 border-white/10 p-0 text-center md:border-r [perspective:1200px]" },
     h(
       "div",
       {
@@ -543,6 +561,7 @@ function KpiFlipCard({ item, comparison, flipped, onFlip, rows, focusSignal }) {
         h(Icon, { name: item.icon, className: `h-9 w-9 ${item.tone}` }),
         h("span", { className: "text-xs font-extrabold text-parallax-muted" }, item.label),
         h("b", { className: "text-4xl font-black text-white" }, item.value),
+        h("span", { className: `rounded-full border px-2 py-0.5 text-[.62rem] font-black uppercase ${confidenceClass(confidence)}` }, `${confidence} confidence`),
         h("em", { className: `text-xs not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(item.delta, "", comparison))
       ),
       h(
@@ -564,8 +583,55 @@ function KpiFlipCard({ item, comparison, flipped, onFlip, rows, focusSignal }) {
             h("em", { className: "not-italic" }, `${risk.region} / score ${risk.score}`)
           )
         )
-      )
+      ),
+      h(MetricTooltip, { text: definition })
     )
+  );
+}
+
+function MetricTooltip({ text }) {
+  return h(
+    "span",
+    {
+      className:
+        "pointer-events-none absolute left-3 right-3 top-3 z-20 rounded-md border border-parallax-teal/30 bg-[#071033]/95 p-3 text-left text-xs leading-snug text-parallax-muted opacity-0 shadow-[0_16px_50px_rgba(0,0,0,.34)] backdrop-blur transition group-hover:opacity-100 group-focus-within:opacity-100"
+    },
+    text
+  );
+}
+
+function metricDefinition(label) {
+  return (
+    {
+      "Risk Score (/100)": "Predictive risk pressure score for the current filter set. Higher values indicate more severe, recurring, unresolved, or accelerating safety risk items.",
+      "Critical Risks": "Risk items with very high current pressure scores. These are the items most likely to require leadership attention.",
+      "High Impact Risks": "Risk items tagged as high operational impact based on potential consequence, scope, or exposure.",
+      "Accelerating Risks": "Risk items worsening faster than the comparison period. This is trend pressure, not total severity.",
+      "Regions Requiring Review": "Regions containing unresolved or assigned risk items that need follow-up ownership."
+    }[label] || "Executive summary metric."
+  );
+}
+
+function confidenceForRows(rows) {
+  const realRows = rows.filter((item) => !String(item.id).startsWith("empty-"));
+  if (realRows.length >= 3) return "High";
+  if (realRows.length >= 1) return "Medium";
+  return "Low";
+}
+
+function confidenceForItem(item) {
+  if (item.score >= 84 && item.impact === "High" && item.review === "Needs Review") return "High";
+  if (item.score >= 70 || item.impact === "High" || item.review === "Assigned") return "Medium";
+  return "Low";
+}
+
+function confidenceClass(confidence) {
+  return (
+    {
+      High: "border-parallax-teal/35 bg-parallax-teal/10 text-parallax-teal",
+      Medium: "border-parallax-gold/35 bg-parallax-gold/10 text-parallax-gold",
+      Low: "border-white/15 bg-white/[.05] text-parallax-muted"
+    }[confidence] || "border-white/15 bg-white/[.05] text-parallax-muted"
   );
 }
 
@@ -651,7 +717,7 @@ function kpiRiskRows(label, rows) {
       "Accelerating Risks": rows.filter((item) => item.delta > 10 && item.direction !== "recovery"),
       "Regions Requiring Review": rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned")
     }[label] || rows;
-  const selected = [...(filtered.length ? filtered : rows)].sort((a, b) => b.score - a.score).slice(0, 3);
+  const selected = [...filtered].sort((a, b) => b.score - a.score).slice(0, 3);
   return selected.length
     ? selected
     : [
@@ -905,7 +971,8 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
                   h(
                     "span",
                     { className: "mt-1 flex max-w-[220px] flex-wrap gap-1" },
-                    rankingDrivers(item).map((driver) => h("em", { key: driver, className: "rounded-full bg-white/10 px-2 py-0.5 text-[.62rem] not-italic text-parallax-muted" }, driver))
+                    rankingDrivers(item).map((driver) => h("em", { key: driver, className: "rounded-full bg-white/10 px-2 py-0.5 text-[.62rem] not-italic text-parallax-muted" }, driver)),
+                    h("em", { className: `rounded-full border px-2 py-0.5 text-[.62rem] not-italic uppercase ${confidenceClass(confidenceForItem(item))}` }, `${confidenceForItem(item)} confidence`)
                   )
                 )
               ),
@@ -937,7 +1004,6 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
   const cardLimit = 3;
   const comparison = comparisonLabel(slicers.timeRange);
   const relevantRows = exactRows.length ? exactRows : contextRows;
-  const emerging = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, cardLimit);
   const followUps = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, cardLimit);
   const openTextRows = fillRows(
     relevantRows.filter((item) => item.signal === "Open Text"),
@@ -949,16 +1015,19 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
     relevantRows.filter((item) => item.direction === "recovery"),
     contextRows.filter((item) => item.direction === "recovery")
   ).slice(0, cardLimit);
+  const complianceRows = fillRows(
+    relevantRows.filter((item) => item.signal === "Compliance"),
+    contextRows.filter((item) => item.signal === "Compliance")
+  ).slice(0, cardLimit);
   const scope = `${slicers.region} / ${slicers.division} / ${slicers.selectedSignal}`;
 
   return h(
     "section",
-    { className: "mt-4 grid gap-4 lg:grid-cols-3" },
+    { className: "mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-4" },
     h(
       MiniCard,
-      { title: "3. Signal Watchlist", summary: `${emerging.length} active risks prioritized`, meta: scope },
-      h(MiniMetricStrip, { rows: emerging, label: comparison }),
-      emerging.map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal(item.signal), comparison }))
+      { title: "3. Risk Item Watchlist", summary: "Cross-item pressure by risk family", meta: riskItemScopeLabel(scope) },
+      h(SignalPressureSummary, { rows: relevantRows, comparison, focusSignal })
     ),
     h(
       MiniCard,
@@ -988,7 +1057,12 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
     ),
     h(
       MiniCard,
-      { title: "5. Narrative & Recovery Context", summary: `${openTextCount} open-text clusters / ${recovery.length} recovery signals`, meta: `${slicers.region} / ${slicers.division}` },
+      { title: "5. Compliance Performance", summary: "Measured separately from predictive risk pressure", meta: comparison },
+      h(CompliancePerformance, { rows: complianceRows, sourceRows: relevantRows, focusSignal })
+    ),
+    h(
+      MiniCard,
+      { title: "6. Narrative & Recovery Context", summary: `${openTextCount} open-text clusters / ${recovery.length} recovery risk items`, meta: `${slicers.region} / ${slicers.division}` },
       h(
         "div",
         { className: "grid gap-2" },
@@ -1042,13 +1116,96 @@ function MiniCard({ title, summary, meta, children }) {
   );
 }
 
+function SignalPressureSummary({ rows, comparison, focusSignal }) {
+  const summaries = signals
+    .map((signal) => {
+      const signalRows = rows.filter((item) => item.signal === signal);
+      const source = signalRows.length ? signalRows : [];
+      const avg = source.length ? Math.round(source.reduce((sum, item) => sum + item.score, 0) / source.length) : 0;
+      const delta = source.length ? Math.round(source.reduce((sum, item) => sum + item.delta, 0) / source.length) : 0;
+      const count = source.length;
+      return { signal, avg, delta, count, top: [...source].sort((a, b) => b.score - a.score)[0] };
+    })
+    .filter((item) => item.count)
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 5);
+
+  return h(
+    "div",
+    { className: "grid gap-2" },
+    summaries.map((item) =>
+      h(
+        "button",
+        {
+          key: item.signal,
+          className: "grid grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
+          onClick: () => focusSignal(item.signal)
+        },
+        h(PatternIcon, { signal: item.signal, compact: true }),
+        h(
+          "span",
+          { className: "min-w-0" },
+          h("strong", { className: "block truncate text-white" }, riskItemLabel(item.signal)),
+          h("em", { className: "block truncate not-italic" }, item.top ? `${item.top.region} / ${item.top.pattern}` : comparison),
+          h(
+            "span",
+            { className: "mt-2 block h-1.5 overflow-hidden rounded-full bg-white/10" },
+            h("i", { className: `block h-full rounded-full ${changeSeverity(item.delta)}`, style: { width: `${clamp(item.avg, 12, 100)}%` } })
+          )
+        ),
+        h(
+          "span",
+          { className: "text-right" },
+          h("b", { className: "block text-xl text-white" }, item.avg),
+          h("em", { className: `not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, `${item.delta > 0 ? "+" : ""}${item.delta}`)
+        )
+      )
+    ),
+    !summaries.length && h("p", { className: "rounded-lg border border-white/10 bg-white/[.04] p-3 text-sm text-parallax-muted" }, "No active risk item pressure under the current filters.")
+  );
+}
+
+function CompliancePerformance({ rows, sourceRows, focusSignal }) {
+  const score = complianceScore(sourceRows);
+  const confidence = confidenceForRows(rows);
+  const source = rows.length ? rows : sourceRows.filter((item) => item.signal === "Compliance").slice(0, 3);
+  return h(
+    "div",
+    { className: "grid gap-3" },
+    h(
+      "div",
+      { className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3" },
+      h(
+        "span",
+        null,
+        h("strong", { className: "block text-white" }, "Compliance Performance Score"),
+        h("em", { className: "not-italic text-parallax-muted" }, "Higher is better; measured separately from predictive risk pressure."),
+        h("span", { className: `mt-2 inline-block rounded-full border px-2 py-0.5 text-[.62rem] font-black uppercase ${confidenceClass(confidence)}` }, `${confidence} confidence`)
+      ),
+      h("b", { className: score >= 82 ? "text-3xl text-parallax-teal" : score >= 72 ? "text-3xl text-parallax-gold" : "text-3xl text-red-400" }, score)
+    ),
+    source.slice(0, 3).map((item) =>
+      h(
+        "button",
+        {
+          key: item.id,
+          className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50",
+          onClick: () => focusSignal("Compliance")
+        },
+        h("span", null, h("strong", { className: "block text-white" }, item.pattern), h("em", { className: "not-italic" }, `${item.region} / ${item.division}`)),
+        h("b", { className: item.direction === "recovery" ? "text-parallax-teal" : "text-parallax-gold" }, item.direction === "recovery" ? "Improving" : "Watch")
+      )
+    )
+  );
+}
+
 function MiniMetricStrip({ rows, label }) {
   const avg = rows.length ? Math.round(rows.reduce((sum, item) => sum + item.score, 0) / rows.length) : 0;
   const high = rows.filter((item) => item.impact === "High").length;
   return h(
     "div",
     { className: "grid grid-cols-3 gap-2 rounded-lg border border-white/10 bg-white/[.035] p-3 text-center" },
-    h("span", null, h("b", { className: "block text-lg text-white" }, rows.length), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "signals")),
+    h("span", null, h("b", { className: "block text-lg text-white" }, rows.length), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "risk items")),
     h("span", null, h("b", { className: "block text-lg text-white" }, avg), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, "avg score")),
     h("span", null, h("b", { className: "block text-lg text-red-400" }, high), h("em", { className: "text-[.65rem] not-italic text-parallax-muted" }, label))
   );
@@ -1096,7 +1253,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
     h(
       "div",
       { className: "mb-4 flex flex-wrap items-center justify-between gap-3" },
-      h("h2", { className: "text-sm font-black uppercase" }, "Operational Signal Heatmap"),
+      h("h2", { className: "text-sm font-black uppercase" }, "Operational Risk Item Heatmap"),
       h(
         "div",
         { className: "flex items-center gap-2" },
@@ -1106,7 +1263,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
             className: `rounded-md border px-3 py-1.5 text-[.68rem] font-black uppercase ${heatmapMode === "signals" ? "border-parallax-teal bg-parallax-teal/15 text-parallax-teal" : "border-white/10 bg-white/[.04] text-parallax-muted"}`,
             onClick: () => setHeatmapMode("signals")
           },
-          "Signal breakout"
+          "Risk item breakout"
         ),
         h(
           "button",
@@ -1181,7 +1338,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
             { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
             h("dt", null, "Aggregate risk score"),
             h("dd", { className: "font-extrabold text-white" }, detailValue),
-            h("dt", null, "Highest contributing signal"),
+            h("dt", null, "Highest contributing risk item"),
             h("dd", { className: "font-extrabold text-white" }, `${highestSignal.signal} (${highestSignal.value})`),
             h("dt", null, "Regions above threshold"),
             h("dd", { className: "font-extrabold text-white" }, `${regionsAboveThreshold} of ${regions.length}`),
@@ -1191,7 +1348,7 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
         : h(
             "dl",
             { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
-            h("dt", null, "Signal score"),
+            h("dt", null, "Risk item score"),
             h("dd", { className: "font-extrabold text-white" }, detailValue),
             h("dt", null, "Escalation rate"),
             h("dd", { className: "font-extrabold text-white" }, `${clamp(detailValue - 39, 6, 58)}%`),
@@ -1297,15 +1454,15 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
           { className: "leading-relaxed" },
           `This reporting period is being driven by ${top.pattern.toLowerCase()} across ${top.region}. `,
           second ? `${second.pattern} is the next strongest contributor, creating a combined leadership review queue for ${scope}. ` : "",
-          recovery ? `${recovery.pattern.toLowerCase()} is the clearest recovery signal and can be used as the response model.` : "No strong recovery signal is currently offsetting the elevated risk pattern."
+          recovery ? `${recovery.pattern.toLowerCase()} is the clearest recovery risk item and can be used as the response model.` : "No strong recovery risk item is currently offsetting the elevated risk pattern."
         ),
         h(
           "div",
           { className: "mt-4 grid gap-2 md:grid-cols-2" },
           h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "Suggested intervention"), h("em", { className: "not-italic" }, interventionFor(top.signal))),
-          h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "What changed"), h("em", { className: "not-italic" }, `${top.signal} moved ${top.delta > 0 ? "+" : ""}${top.delta} pts ${comparisonLabel(slicers.timeRange)}.`))
+          h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "What changed"), h("em", { className: "not-italic" }, `${riskItemLabel(top.signal)} moved ${top.delta > 0 ? "+" : ""}${top.delta} pts ${comparisonLabel(slicers.timeRange)}.`))
         ),
-        h("button", { className: "mt-4 rounded-md border border-parallax-teal/50 bg-parallax-teal/10 px-3 py-2 text-xs font-black uppercase text-parallax-teal", onClick: () => focusSignal(top.signal) }, "Focus summary signal")
+        h("button", { className: "mt-4 rounded-md border border-parallax-teal/50 bg-parallax-teal/10 px-3 py-2 text-xs font-black uppercase text-parallax-teal", onClick: () => focusSignal(top.signal) }, "Focus summary risk item")
       ),
     h(
       "div",
@@ -1327,7 +1484,7 @@ function interventionFor(signal) {
       Workflows: "Run workflow participation huddles at the lowest-performing sites.",
       Compliance: "Trigger score movement review and audit exception documentation.",
       "Open Text": "Review narrative clusters for fatigue, frustration, and near-miss language."
-    }[signal] || "Review the highest-confidence operational signal with regional leadership."
+    }[signal] || "Review the highest-confidence operational risk item with regional leadership."
   );
 }
 
@@ -1339,7 +1496,7 @@ function actionLabelFor(signal) {
       Assignments: "Rebalance ownership",
       Workflows: "Restore workflow cadence",
       Compliance: "Review scoring drift",
-      "Open Text": "Inspect narrative signals"
+      "Open Text": "Inspect narrative risk items"
     }[signal] || "Focus leadership response"
   );
 }
@@ -1374,7 +1531,7 @@ function ReviewLinks() {
       "footer",
       { className: "mt-4 grid items-center gap-4 rounded-lg border border-white/10 bg-white/[.04] p-4 md:grid-cols-[34px_1fr_1fr]" },
       h(Icon, { name: "bot", className: "h-8 w-8 text-parallax-muted" }),
-      h("p", { className: "text-sm leading-snug text-parallax-muted" }, h("strong", { className: "mb-1 block text-white" }, "About this digest"), "This digest is generated weekly to focus leaders on what matters most. It analyzes changes, trends, and patterns across key safety signals so you can act where it counts."),
+      h("p", { className: "text-sm leading-snug text-parallax-muted" }, h("strong", { className: "mb-1 block text-white" }, "About this digest"), "This digest is generated weekly to focus leaders on what matters most. It analyzes changes, trends, and patterns across key safety risk items so you can act where it counts."),
       h("p", { className: "text-sm leading-snug text-parallax-muted" }, h("strong", { className: "mb-1 block text-white" }, "Questions or feedback?"), "Reply to this email or contact the Safety Intelligence team.")
     ),
     h("blockquote", { className: "mt-4 border-l-4 border-parallax-gold p-4 text-2xl font-black leading-tight md:text-4xl" }, '"Dashboards create visibility. Intelligence creates prioritization."')
