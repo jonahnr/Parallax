@@ -6,7 +6,6 @@ import {
   activePatterns,
   baselineLabel,
   clamp,
-  complianceScore,
   comparedToLabel,
   comparisonLabel,
   contextPatterns,
@@ -17,6 +16,7 @@ import {
   heatValue,
   leadershipItems,
   overallSignal,
+  scoredPatterns,
   signalDirectionMetric,
   signalState,
   topThings
@@ -375,7 +375,7 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
     { icon: "trend", label: "Accelerating Risks", value: metrics.acceleratingRisks.current, delta: metrics.acceleratingRisks.delta, tone: "text-parallax-gold" },
     { icon: "map", label: "Regions Requiring Review", value: metrics.reviewRegions.current, delta: metrics.reviewRegions.delta, tone: "text-parallax-teal" }
   ];
-  const changeItems = buildChangeItems(slicers, things);
+  const changeItems = buildChangeItems(slicers, things, rows);
 
   return h(
     "section",
@@ -439,6 +439,7 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
 
 function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
   const [changesOpen, setChangesOpen] = useState(false);
+  const [flippedKpi, setFlippedKpi] = useState(null);
   const score = overallSignal(rows);
   const [label, level] = signalState(score);
   const things = topThings(slicers, rows);
@@ -446,7 +447,6 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
   const metrics = executiveMetrics(slicers, rows);
   const scoreDelta = score - metrics.previousScore;
   const comparison = comparisonLabel(slicers.timeRange);
-  const riskDrivers = scoreDrivers(rows, scoreDelta);
   const kpis = [
     { icon: "alert", label: "Critical Risks", value: metrics.criticalRisks.current, delta: metrics.criticalRisks.delta, tone: "text-red-400" },
     { icon: "alert", label: "High Impact Risks", value: metrics.highImpactRisks.current, delta: metrics.highImpactRisks.delta, tone: "text-red-400" },
@@ -464,7 +464,7 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
       { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-2 xl:grid-cols-[1.7fr_repeat(4,minmax(0,1fr))]" },
       h(
         "article",
-        { className: "grid min-h-48 gap-3 border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
+        { className: "grid min-h-44 place-items-center border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
         h("span", { className: "text-xs font-extrabold uppercase text-parallax-muted" }, "Risk Score (/100)"),
         h(
           "div",
@@ -473,29 +473,18 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
           h("b", { className: "pb-3 text-xl text-parallax-muted" }, "/100")
         ),
         h("strong", { className: `text-sm uppercase ${signalColor}` }, label),
-        h("em", { className: `block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison)),
-        h(
-          "div",
-          { className: "grid grid-cols-2 gap-2 text-left" },
-          riskDrivers.map((item) =>
-            h(
-              "span",
-              { key: item.label, className: "rounded-md border border-white/10 bg-white/[.05] px-2 py-1.5" },
-              h("b", { className: `block text-xs ${item.tone}` }, item.value),
-              h("em", { className: "text-[.62rem] not-italic uppercase text-parallax-muted" }, item.label)
-            )
-          )
-        )
+        h("em", { className: `block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison))
       ),
       kpis.map((item) =>
-        h(
-          "article",
-          { key: item.label, className: "grid min-h-48 place-items-center border-white/10 p-4 text-center md:border-r" },
-          h(Icon, { name: item.icon, className: `h-9 w-9 ${item.tone}` }),
-          h("span", { className: "text-xs font-extrabold text-parallax-muted" }, item.label),
-          h("b", { className: "text-4xl font-black text-white" }, item.value),
-          h("em", { className: `text-xs not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(item.delta, "", comparison))
-        )
+        h(KpiFlipCard, {
+          key: item.label,
+          item,
+          comparison,
+          flipped: flippedKpi === item.label,
+          onFlip: () => setFlippedKpi(flippedKpi === item.label ? null : item.label),
+          rows: kpiRiskRows(item.label, rows),
+          focusSignal
+        })
       )
     ),
     h(
@@ -504,7 +493,7 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
       h(
         "div",
         { className: "mb-3 flex flex-wrap items-center justify-between gap-3" },
-        h("span", { className: "text-sm font-extrabold" }, "What Changed This Week"),
+        h("span", { className: "text-sm font-extrabold" }, changeWindowTitle(slicers.timeRange)),
         h(
           "button",
           { className: "rounded-md border border-parallax-teal/40 bg-parallax-teal/10 px-3 py-1.5 text-xs font-black uppercase text-parallax-teal transition hover:bg-parallax-teal/20", onClick: () => setChangesOpen((open) => !open) },
@@ -519,14 +508,60 @@ function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
             "button",
             { key: item.label, className: "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg border border-white/10 bg-white/[.035] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15", onClick: () => focusSignal(item.signal) },
             h("strong", { className: "truncate text-sm text-white" }, item.label),
-            h("span", { className: "flex items-center gap-2" }, h("b", { className: item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts`), h(DirectionArrow, { direction: item.direction })),
-            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, changesOpen ? `${item.summary} / ${item.signal} / ${comparison}` : item.signal),
+            h("span", { className: "flex items-center gap-2" }, h("i", { className: `h-3 w-3 rounded-full not-italic ${changeSeverity(item.delta)}`, title: severityLabel(item.delta) }), h("b", { className: item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts`), h(DirectionArrow, { direction: item.direction })),
+            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, changesOpen ? `${item.signal} / ${comparison}` : item.signal),
             changesOpen &&
               h(
                 "span",
-                { className: "col-span-2 rounded-md border border-white/10 bg-[#071033]/35 p-2 text-xs text-parallax-muted" },
-                item.delta > 0 ? "Increasing pressure versus the comparison period; review contributing sites before escalation ages further." : item.delta < 0 ? "Improving versus the comparison period; verify whether the recovery pattern can be repeated elsewhere." : "Flat versus the comparison period; monitor for emerging movement."
+                { className: "col-span-2 grid gap-2 rounded-md border border-white/10 bg-[#071033]/35 p-2 text-xs text-parallax-muted" },
+                h("span", { className: "h-1.5 overflow-hidden rounded-full bg-white/10" }, h("i", { className: `block h-full rounded-full ${changeSeverity(item.delta)}`, style: { width: `${clamp(Math.abs(item.delta) * 6, 18, 100)}%` } })),
+                h("span", null, changeNarrative(item))
               )
+          )
+        )
+      )
+    )
+  );
+}
+
+function KpiFlipCard({ item, comparison, flipped, onFlip, rows, focusSignal }) {
+  return h(
+    "article",
+    { className: "min-h-44 border-white/10 p-0 text-center md:border-r [perspective:1200px]" },
+    h(
+      "div",
+      {
+        className: `relative min-h-44 w-full transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? "[transform:rotateY(180deg)]" : ""}`
+      },
+      h(
+        "button",
+        {
+          className: "absolute inset-0 grid min-h-44 w-full place-items-center p-4 [backface-visibility:hidden]",
+          onClick: onFlip,
+          title: `Show risks for ${item.label}`
+        },
+        h(Icon, { name: item.icon, className: `h-9 w-9 ${item.tone}` }),
+        h("span", { className: "text-xs font-extrabold text-parallax-muted" }, item.label),
+        h("b", { className: "text-4xl font-black text-white" }, item.value),
+        h("em", { className: `text-xs not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(item.delta, "", comparison))
+      ),
+      h(
+        "div",
+        {
+          className: "absolute inset-0 grid min-h-44 content-start gap-2 overflow-y-auto bg-[#071033]/80 p-3 text-left [backface-visibility:hidden] [transform:rotateY(180deg)]"
+        },
+        h(
+          "button",
+          { className: `flex items-center justify-between gap-2 rounded-md border border-white/10 bg-white/[.05] px-2 py-1.5 ${item.tone}`, onClick: onFlip, title: "Return to metric" },
+          h("strong", { className: "text-xs text-white" }, item.label),
+          h(Icon, { name: item.icon, className: "h-4 w-4" })
+        ),
+        rows.map((risk) =>
+          h(
+            "button",
+            { key: risk.id, className: "rounded-md border border-white/10 bg-white/[.04] px-2 py-1.5 text-left text-[.68rem] text-parallax-muted hover:border-parallax-teal/50", onClick: () => focusSignal(risk.signal) },
+            h("b", { className: "block truncate text-white" }, risk.pattern),
+            h("em", { className: "not-italic" }, `${risk.region} / score ${risk.score}`)
           )
         )
       )
@@ -573,26 +608,61 @@ function metricDelta(current, previous) {
   return { current, delta: current - previous };
 }
 
-function scoreDrivers(rows, scoreDelta) {
-  const activeRows = rows.length ? rows : [];
-  const avgDelta = activeRows.length ? Math.round(activeRows.reduce((sum, item) => sum + item.delta, 0) / activeRows.length) : scoreDelta;
-  const highExposure = new Set(activeRows.filter((item) => item.score >= 70).map((item) => item.region)).size;
-  const recurrence = activeRows.filter((item) => item.delta > 8).length;
-  const unresolved = activeRows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").length;
-  const severe = activeRows.filter((item) => item.score >= 84 || item.impact === "High").length;
-  return [
-    { label: "Trend", value: avgDelta > 0 ? `+${avgDelta}` : `${avgDelta}`, tone: avgDelta > 0 ? "text-red-400" : avgDelta < 0 ? "text-parallax-teal" : "text-parallax-muted" },
-    { label: "Exposure", value: `${highExposure} regions`, tone: highExposure >= 3 ? "text-red-400" : "text-parallax-gold" },
-    { label: "Recurrence", value: `${recurrence} signals`, tone: recurrence >= 3 ? "text-red-400" : "text-parallax-gold" },
-    { label: "Unresolved", value: `${unresolved} actions`, tone: unresolved >= 5 ? "text-red-400" : "text-parallax-gold" },
-    { label: "Severity", value: `${severe} high`, tone: severe >= 4 ? "text-red-400" : "text-parallax-gold" }
-  ];
-}
-
 function deltaLabel(delta, unit = "", comparison = "") {
   const direction = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
   const suffix = unit ? ` ${unit}` : "";
   return `${direction} ${Math.abs(delta)}${suffix} ${comparison}`.trim();
+}
+
+function changeWindowTitle(timeRange) {
+  return (
+    {
+      "Current Week": "What Changed This Reporting Period",
+      "Prior 7 Days": "What Changed In The Prior 7 Days",
+      "4-Week Rolling": "What Changed In The 4-Week Rollup",
+      "Quarter to Date": "What Changed Quarter To Date"
+    }[timeRange] || "What Changed This Week"
+  );
+}
+
+function changeSeverity(delta) {
+  const absolute = Math.abs(delta);
+  if (delta < 0) return "bg-parallax-teal shadow-[0_0_12px_rgba(22,181,163,.36)]";
+  if (absolute >= 14) return "bg-red-400 shadow-[0_0_12px_rgba(248,113,113,.36)]";
+  if (absolute >= 8) return "bg-orange-400 shadow-[0_0_12px_rgba(251,146,60,.32)]";
+  if (absolute >= 3) return "bg-parallax-gold shadow-[0_0_12px_rgba(245,181,68,.30)]";
+  return "bg-white/35";
+}
+
+function severityLabel(delta) {
+  const absolute = Math.abs(delta);
+  if (delta < 0) return "Improving";
+  if (absolute >= 14) return "Critical movement";
+  if (absolute >= 8) return "High movement";
+  if (absolute >= 3) return "Moderate movement";
+  return "Stable movement";
+}
+
+function kpiRiskRows(label, rows) {
+  const filtered =
+    {
+      "Critical Risks": rows.filter((item) => item.score >= 84),
+      "High Impact Risks": rows.filter((item) => item.impact === "High"),
+      "Accelerating Risks": rows.filter((item) => item.delta > 10 && item.direction !== "recovery"),
+      "Regions Requiring Review": rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned")
+    }[label] || rows;
+  const selected = [...(filtered.length ? filtered : rows)].sort((a, b) => b.score - a.score).slice(0, 3);
+  return selected.length
+    ? selected
+    : [
+        {
+          id: `empty-${label}`,
+          pattern: "No matching risks under current filters",
+          region: "Current filter set",
+          score: "--",
+          signal: "All Signals"
+        }
+      ];
 }
 
 function RiskDonut({ score, level }) {
@@ -607,26 +677,30 @@ function RiskDonut({ score, level }) {
   );
 }
 
-function buildChangeItems(slicers, things) {
-  const priority = ensureThreeThings(things).map((item) => {
-    const metric = signalDirectionMetric(slicers, item.signal);
+function buildChangeItems(slicers, things, rows) {
+  const scoped = scoredPatterns(slicers);
+  const sourceRows = rows.length ? rows : scoped;
+  const priority = ensureThreeThings(things).map((item, index) => {
+    const metric = changeMetricForSignal(slicers, item.signal, sourceRows, index);
     return {
       label: item.pattern,
       signal: item.signal,
       delta: metric.delta,
       direction: metric.direction,
-      summary: metric.level
+      summary: metric.level,
+      mover: metric.mover
     };
   });
   const directional = signals
-    .map((signal) => ({ signal, ...signalDirectionMetric(slicers, signal) }))
+    .map((signal, index) => ({ signal, ...changeMetricForSignal(slicers, signal, scoped, index + 2) }))
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
     .map((item) => ({
       label: item.signal,
       signal: item.signal,
       delta: item.delta,
       direction: item.direction,
-      summary: item.level
+      summary: item.level,
+      mover: item.mover
     }));
 
   const seen = new Set();
@@ -635,6 +709,44 @@ function buildChangeItems(slicers, things) {
     seen.add(item.label);
     return true;
   }).slice(0, 5);
+}
+
+function changeMetricForSignal(slicers, signal, rows, index = 0) {
+  const signalRows = rows.filter((item) => signal === "All Signals" || item.signal === signal);
+  const candidates = signalRows.length ? signalRows : scoredPatterns({ ...slicers, selectedSignal: "All Signals" }).filter((item) => item.signal === signal);
+  const timeScale =
+    {
+      "Current Week": 3.2,
+      "Prior 7 Days": 4.2,
+      "4-Week Rolling": 5.6,
+      "Quarter to Date": 7.4
+    }[slicers.timeRange] || 3.2;
+  const ranked = candidates
+    .map((item) => {
+      const raw = Math.round((item.trend.at(-1) - item.trend[0]) / timeScale);
+      const directional = item.direction === "recovery" ? -Math.abs(raw || item.delta || 4) : item.direction === "down" ? -Math.abs(raw || 3) : raw || item.delta || 0;
+      const shaped = clamp(directional + ((index % 3) - 1) * 2, -16, 20);
+      return { item, delta: shaped };
+    })
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  const fallback = signalDirectionMetric(slicers, signal);
+  const top = ranked[0];
+  const delta = top ? top.delta : fallback.delta;
+  const direction = delta >= 4 ? "up" : delta <= -4 ? "down" : "flat";
+  const level = Math.abs(delta) >= 12 ? "Severe" : Math.abs(delta) >= 7 ? "Elevated" : Math.abs(delta) >= 3 ? "Watch" : "Stable";
+  return {
+    delta,
+    direction,
+    level,
+    mover: top ? { pattern: top.item.pattern, region: top.item.region, division: top.item.division, delta: top.delta } : null
+  };
+}
+
+function changeNarrative(item) {
+  const mover = item.mover;
+  const movement = item.delta > 0 ? "increased" : item.delta < 0 ? "improved" : "held mostly steady";
+  const leader = mover ? `${mover.pattern} in ${mover.region} (${mover.division})` : item.signal;
+  return `${leader} ${movement} the most at ${item.delta > 0 ? "+" : ""}${item.delta} pts.`;
 }
 
 function DirectionArrow({ direction }) {
@@ -727,7 +839,7 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
     ["score", "Criticality"],
     ["delta", "Trend vs Comparison"],
     ["region", "Affected Scope"],
-    ["review", "Review"]
+    ["action", "Recommended Action"]
   ];
   const rankColors = ["#EF4444", "#F97316", "#F5B544", "#7C3AED", "#16A34A"];
 
@@ -804,7 +916,16 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
                 h("span", { className: "mt-1 block text-xs text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts ${comparisonLabelFromToken(filterToken)}`)
               ),
               h("td", { className: "border-b border-white/10 p-3" }, h("strong", { className: "block" }, item.region), h("span", { className: "text-parallax-muted" }, item.division)),
-              h("td", { className: "border-b border-white/10 p-3" }, h("button", { className: "rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-parallax-gold hover:bg-parallax-gold/20" }, "Review ->"))
+              h(
+                "td",
+                { className: "border-b border-white/10 p-3" },
+                h(
+                  "button",
+                  { className: "max-w-[260px] rounded-md border border-parallax-gold/45 bg-parallax-gold/10 px-3 py-2 text-left text-xs text-parallax-gold transition hover:bg-parallax-gold/20" },
+                  h("strong", { className: "block text-white" }, actionLabelFor(item.signal)),
+                  h("em", { className: "not-italic text-parallax-muted" }, interventionFor(item.signal))
+                )
+              )
             )
           )
         )
@@ -818,10 +939,6 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
   const relevantRows = exactRows.length ? exactRows : contextRows;
   const emerging = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, cardLimit);
   const followUps = fillRows(relevantRows.filter((item) => item.direction !== "recovery"), contextRows).slice(0, cardLimit);
-  const complianceRows = fillRows(
-    relevantRows.filter((item) => item.signal === "Compliance"),
-    contextRows.filter((item) => item.signal === "Compliance")
-  ).slice(0, cardLimit);
   const openTextRows = fillRows(
     relevantRows.filter((item) => item.signal === "Open Text"),
     contextRows.filter((item) => item.signal === "Open Text")
@@ -836,10 +953,10 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
 
   return h(
     "section",
-    { className: "mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" },
+    { className: "mt-4 grid gap-4 lg:grid-cols-3" },
     h(
       MiniCard,
-      { title: "3. Emerging Risk Patterns", summary: `${emerging.length} active signals / ${openTextCount} open-text clusters`, meta: scope },
+      { title: "3. Signal Watchlist", summary: `${emerging.length} active risks prioritized`, meta: scope },
       h(MiniMetricStrip, { rows: emerging, label: comparison }),
       emerging.map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal(item.signal), comparison }))
     ),
@@ -867,55 +984,42 @@ function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken
           ),
           h(MicroTrend, { values: item.trend, color: item.color, token: `${filterToken}-follow-${item.id}` })
         )
-      ),
-      h(
-        "div",
-        { className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3" },
-        h("span", { className: "text-sm" }, h("strong", { className: "block text-white" }, "Average Compliance Score"), h("em", { className: "not-italic text-red-400" }, `${complianceScore(relevantRows) >= 78 ? "^ 3 pts" : "v " + clamp(80 - complianceScore(relevantRows), 2, 10) + " pts"} ${comparison}`)),
-        h("b", { className: "text-3xl" }, complianceScore(relevantRows))
       )
     ),
     h(
       MiniCard,
-      { title: "5. Compliance / Scoring Movement", summary: `${complianceRows.length} scoring signals`, meta: comparison },
-      h(ComplianceMovement, { rows: complianceRows, sourceRows: relevantRows, comparison, filterToken, focusSignal })
-    ),
-    h(
-      MiniCard,
-      { title: "6. Operational Recovery Items", summary: `${recovery.length} improving signals`, meta: slicers.timeRange },
-      h(MiniMetricStrip, { rows: recovery, label: "recovery confidence" }),
-      recovery.map((item) =>
-        h(
-          "button",
-          {
-            key: item.id,
-            className:
-              "grid grid-cols-[38px_1fr] gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
-            onClick: () => focusSignal(item.signal)
-          },
+      { title: "5. Narrative & Recovery Context", summary: `${openTextCount} open-text clusters / ${recovery.length} recovery signals`, meta: `${slicers.region} / ${slicers.division}` },
+      h(
+        "div",
+        { className: "grid gap-2" },
+        openText.slice(0, 2).map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal("Open Text"), openText: true, comparison })),
+        recovery.slice(0, 2).map((item) =>
           h(
-            "span",
+            "button",
             {
+              key: item.id,
               className:
-                "grid h-9 w-9 place-items-center rounded-lg border border-parallax-teal/40 bg-parallax-teal/15 text-parallax-teal shadow-[0_0_20px_rgba(22,181,163,.14)]"
+                "grid grid-cols-[38px_1fr] gap-3 rounded-lg border border-parallax-teal/30 bg-parallax-teal/10 p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/60",
+              onClick: () => focusSignal(item.signal)
             },
-            h(Icon, { name: "check", className: "h-5 w-5" })
-          ),
-          h(
-            "span",
-            null,
-            h("strong", { className: "block text-white" }, item.pattern),
-            h("em", { className: "not-italic" }, item.why),
-            h("span", { className: "mt-2 block text-xs font-extrabold text-parallax-teal" }, `${Math.abs(item.delta)} pt improvement confidence / ${item.region}`)
+            h(
+              "span",
+              {
+                className:
+                  "grid h-9 w-9 place-items-center rounded-lg border border-parallax-teal/40 bg-parallax-teal/15 text-parallax-teal shadow-[0_0_20px_rgba(22,181,163,.14)]"
+              },
+              h(Icon, { name: "check", className: "h-5 w-5" })
+            ),
+            h(
+              "span",
+              null,
+              h("strong", { className: "block text-white" }, item.pattern),
+              h("em", { className: "not-italic" }, item.why),
+              h("span", { className: "mt-2 block text-xs font-extrabold text-parallax-teal" }, `${Math.abs(item.delta)} pt improvement confidence / ${item.region}`)
+            )
           )
         )
       )
-    ),
-    h(
-      MiniCard,
-      { title: "7. Open Text Concern Signals", summary: `${openTextCount} narrative clusters`, meta: `${slicers.region} / ${slicers.division}` },
-      h(MiniMetricStrip, { rows: openText, label: "narrative severity" }),
-      openText.map((item) => h(MiniSignalRow, { key: item.id, item, onClick: () => focusSignal("Open Text"), openText: true, comparison }))
     )
   );
 }
@@ -936,63 +1040,6 @@ function MiniCard({ title, summary, meta, children }) {
     h("div", { className: "grid gap-1" }, h("h2", { className: "text-sm font-black uppercase" }, title), summary && h("p", { className: "text-xs font-extrabold text-parallax-gold" }, summary), meta && h("p", { className: "text-xs text-parallax-muted" }, meta)),
     children
   );
-}
-
-function ComplianceMovement({ rows, sourceRows, comparison, filterToken, focusSignal }) {
-  const score = complianceScore(sourceRows);
-  const delta = clamp(80 - score, -8, 12);
-  const trend = rows[0]?.trend || [74, 76, 75, 73, 72, 70, 71, 69, 68, score];
-  const regions = ["West Region", "South Region", "Central Region", "North Region"];
-
-  return h(
-    "div",
-    { className: "grid gap-3" },
-    h(
-      "div",
-      { className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3" },
-      h(
-        "span",
-        null,
-        h("strong", { className: "block text-white" }, "Average Compliance Score"),
-        h("em", { className: `not-italic ${delta > 0 ? "text-red-400" : "text-parallax-teal"}` }, `${delta > 0 ? "v" : "^"} ${Math.abs(delta)} pts ${comparison}`)
-      ),
-      h("b", { className: "text-3xl" }, score)
-    ),
-    h(MicroTrend, { values: trend.map((value) => clamp(value + score / 10, 12, 90)), color: "#F5B544", token: `${filterToken}-compliance-score` }),
-    h(
-      "div",
-      { className: "grid gap-2" },
-      rows.map((item, index) =>
-        h(
-          "button",
-          {
-            key: item.id,
-            className: "grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-white/[.04] p-3 text-left text-sm text-parallax-muted transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15",
-            onClick: () => focusSignal("Compliance")
-          },
-          h("span", null, h("strong", { className: "block text-white" }, item.pattern), h("em", { className: "not-italic" }, item.region)),
-          h("b", { className: item.direction === "recovery" ? "text-parallax-teal" : "text-parallax-gold" }, `${scoreByRegion(score, index, item.direction)}`)
-        )
-      )
-    ),
-    h(
-      "div",
-      { className: "grid gap-2 rounded-lg border border-white/10 bg-white/[.035] p-3 text-sm text-parallax-muted" },
-      regions.map((region, index) =>
-        h(
-          "span",
-          { key: region, className: "grid grid-cols-[1fr_auto] gap-3" },
-          h("strong", { className: "text-white" }, region),
-          h("em", { className: `not-italic ${index === 2 ? "text-red-400" : index === 3 ? "text-parallax-teal" : "text-parallax-muted"}` }, `${scoreByRegion(score, index)} / ${index === 3 ? "^" : "v"} ${index + 2} pts`)
-        )
-      )
-    )
-  );
-}
-
-function scoreByRegion(score, index, direction = "up") {
-  const adjustment = direction === "recovery" ? index + 2 : -(index + 1) * 2;
-  return clamp(score + adjustment, 61, 94);
 }
 
 function MiniMetricStrip({ rows, label }) {
@@ -1159,24 +1206,34 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
 
 function UsaRiskMap({ regions, setHoverCell }) {
   const positions = {
-    "West Region": { x: 74, y: 112, w: 120, h: 108, path: "M46 112 104 78 186 105 196 194 126 234 62 196Z" },
-    "Central Region": { x: 196, y: 102, w: 122, h: 118, path: "M192 104 315 96 332 198 268 236 196 198Z" },
-    "South Region": { x: 232, y: 214, w: 156, h: 92, path: "M202 214 342 202 402 250 354 312 244 294Z" },
-    "North Region": { x: 310, y: 86, w: 146, h: 106, path: "M310 92 418 70 480 112 450 188 338 204Z" }
+    "West Region": { x: 93, y: 155, path: "M46 118 86 82 139 92 164 136 155 194 106 238 58 210 38 160Z" },
+    "Central Region": { x: 235, y: 154, path: "M160 98 282 92 310 144 298 214 214 232 154 194 164 136Z" },
+    "South Region": { x: 310, y: 242, path: "M214 232 298 214 392 226 450 266 408 306 318 304 248 284Z" },
+    "North Region": { x: 390, y: 142, path: "M282 92 388 74 474 108 486 154 444 202 348 210 310 144Z" }
   };
   const colorFor = (value) => (value >= 85 ? "#EF4444" : value >= 72 ? "#F97316" : value >= 58 ? "#F5B544" : "#16B5A3");
+  const labels = [
+    ["Low", "#16B5A3"],
+    ["Moderate", "#F5B544"],
+    ["High", "#F97316"],
+    ["Critical", "#EF4444"]
+  ];
   return h(
     "div",
-    { className: "min-w-[430px] rounded-lg border border-white/10 bg-[#071033]/45 p-3" },
+    { className: "min-w-[430px] rounded-lg border border-white/10 bg-[#071033]/45 p-3 shadow-[inset_0_0_42px_rgba(31,106,229,.08)]" },
     h(
       "svg",
-      { className: "block h-[300px] w-full", viewBox: "0 0 520 340", role: "img", "aria-label": "USA operational risk map by region" },
+      { className: "block h-[330px] w-full", viewBox: "0 0 520 360", role: "img", "aria-label": "USA operational risk map by region" },
+      h("defs", null, h("pattern", { id: "mapGrid", width: 18, height: 18, patternUnits: "userSpaceOnUse" }, h("path", { d: "M18 0H0V18", fill: "none", stroke: "rgba(255,255,255,.05)", strokeWidth: 1 }))),
       h("path", {
-        d: "M46 112 104 78 186 105 310 92 418 70 480 112 450 188 402 250 354 312 244 294 126 234 62 196Z",
-        fill: "rgba(255,255,255,.035)",
+        d: "M38 160 46 118 86 82 139 92 282 92 388 74 474 108 486 154 444 202 450 266 408 306 318 304 248 284 106 238 58 210Z",
+        fill: "url(#mapGrid)",
         stroke: "rgba(255,255,255,.18)",
         strokeWidth: 2
       }),
+      h("path", { d: "M78 246 110 270 144 284", fill: "none", stroke: "rgba(255,255,255,.14)", strokeWidth: 2, strokeDasharray: "5 6" }),
+      h("circle", { cx: 72, cy: 268, r: 11, fill: "rgba(31,106,229,.16)", stroke: "rgba(255,255,255,.18)" }),
+      h("circle", { cx: 458, cy: 236, r: 9, fill: "rgba(31,106,229,.14)", stroke: "rgba(255,255,255,.16)" }),
       regions.map(({ region, value }) => {
         const pos = positions[region];
         const color = colorFor(value);
@@ -1192,16 +1249,24 @@ function UsaRiskMap({ regions, setHoverCell }) {
           h("path", {
             d: pos.path,
             fill: color,
-            fillOpacity: value >= 85 ? 0.72 : value >= 72 ? 0.58 : 0.42,
+            fillOpacity: value >= 85 ? 0.72 : value >= 72 ? 0.56 : value >= 58 ? 0.42 : 0.28,
             stroke: color,
             strokeWidth: 2,
             style: { filter: "drop-shadow(0 0 12px rgba(31,106,229,.26))" }
           }),
-          h("text", { x: pos.x + pos.w / 2, y: pos.y + pos.h / 2 - 5, textAnchor: "middle", fill: "white", fontSize: 16, fontWeight: 900 }, region.replace(" Region", "")),
-          h("text", { x: pos.x + pos.w / 2, y: pos.y + pos.h / 2 + 18, textAnchor: "middle", fill: "white", fontSize: 24, fontWeight: 900 }, value)
+          h("circle", { cx: pos.x, cy: pos.y, r: 24, fill: "rgba(7,16,51,.72)", stroke: color, strokeWidth: 2 }),
+          h("text", { x: pos.x, y: pos.y - 5, textAnchor: "middle", fill: "white", fontSize: 12, fontWeight: 900 }, region.replace(" Region", "")),
+          h("text", { x: pos.x, y: pos.y + 16, textAnchor: "middle", fill: "white", fontSize: 22, fontWeight: 900 }, value)
         );
       }),
-      h("text", { x: 30, y: 324, fill: "rgba(255,255,255,.62)", fontSize: 12, fontWeight: 700 }, "Regional total risk score, filtered by current slicers")
+      labels.map(([label, color], index) =>
+        h(
+          "g",
+          { key: label, transform: `translate(${30 + index * 112} 326)` },
+          h("rect", { width: 12, height: 12, rx: 3, fill: color, fillOpacity: 0.7 }),
+          h("text", { x: 18, y: 11, fill: "rgba(255,255,255,.66)", fontSize: 11, fontWeight: 800 }, label)
+        )
+      )
     )
   );
 }
@@ -1263,6 +1328,19 @@ function interventionFor(signal) {
       Compliance: "Trigger score movement review and audit exception documentation.",
       "Open Text": "Review narrative clusters for fatigue, frustration, and near-miss language."
     }[signal] || "Review the highest-confidence operational signal with regional leadership."
+  );
+}
+
+function actionLabelFor(signal) {
+  return (
+    {
+      Escalations: "Stabilize escalation closure",
+      "Actions / CA": "Audit overdue actions",
+      Assignments: "Rebalance ownership",
+      Workflows: "Restore workflow cadence",
+      Compliance: "Review scoring drift",
+      "Open Text": "Inspect narrative signals"
+    }[signal] || "Focus leadership response"
   );
 }
 
