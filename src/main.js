@@ -129,6 +129,7 @@ function App() {
   const [sort, setSort] = useState({ key: "score", dir: -1 });
   const [hoverCell, setHoverCell] = useState(null);
   const [leadershipView, setLeadershipView] = useState("top5");
+  const [heatmapMode, setHeatmapMode] = useState("signals");
   const filterToken = Object.values(slicers).join("|");
   const exactRows = useMemo(() => activePatterns(slicers, sort), [slicers, sort]);
   const allLeadershipRows = useMemo(() => leadershipItems(slicers, exactRows, 999), [slicers, exactRows]);
@@ -168,7 +169,7 @@ function App() {
       h(
         "aside",
         { className: "grid content-start gap-4", style: { position: "relative", top: "auto" } },
-        h(Heatmap, { slicers, hoverCell, setHoverCell }),
+        h(Heatmap, { slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode }),
         h(DecisionMatrix, { rows: contextRows, slicers, focusSignal })
       )
     ),
@@ -375,14 +376,19 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
       h(
         "article",
         { className: `${softCardClass} grid min-h-52 place-items-center text-center` },
-        h("span", { className: "text-sm font-extrabold" }, "Overall Safety Signal"),
+        h("span", { className: "text-sm font-extrabold" }, "Overall Operational Risk Score"),
         h(
           "div",
-          { className: "my-4 flex items-center justify-center gap-4" },
-          h("b", { className: "grid h-14 w-14 place-items-center rounded-full bg-orange-500 text-3xl shadow-gold" }, "!"),
-          h("strong", { className: `text-xl ${signalColor}` }, label)
+          { className: "my-4 grid place-items-center gap-2" },
+          h(
+            "span",
+            { className: "relative grid h-24 w-24 place-items-center rounded-full border border-white/15 bg-white/[.05] shadow-gold" },
+            h("b", { className: "text-4xl font-black text-white" }, score),
+            h("i", { className: "absolute bottom-5 right-5 text-xs not-italic text-parallax-muted" }, "/100")
+          ),
+          h("strong", { className: `text-lg ${signalColor}` }, label)
         ),
-        h("em", { className: "not-italic text-parallax-muted" }, comparisonLabel(slicers.timeRange)),
+        h("em", { className: "not-italic text-parallax-muted" }, `${score >= 70 ? "Elevated risk" : "Controlled risk"} ${comparisonLabel(slicers.timeRange)}`),
         h("p", { className: "mt-3 max-w-48 leading-snug" }, level === "low" ? "Improving across key signal areas" : `Worsening across ${clamp(Math.round(score / 12), 3, 9)} of 9 key signal areas`)
       ),
       h(
@@ -525,7 +531,7 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
 
   return h(
     "section",
-    { className: `${panelClass} overflow-x-auto` },
+    { className: `${panelClass}` },
     h(
       "div",
       { className: "mb-4 flex flex-wrap items-center justify-between gap-4" },
@@ -547,53 +553,56 @@ function LeadershipTable({ rows, totalCount, exactCount, sort, setSort, filterTo
       )
     ),
     h(
-      "table",
-      { className: "w-full min-w-[980px] border-collapse text-sm" },
+      "div",
+      { className: `${leadershipView === "all" ? "max-h-[560px] overflow-y-auto" : ""} overflow-x-auto pr-2` },
       h(
-        "thead",
-        null,
-        h("tr", null, headers.map(([key, label]) => h("th", { key, className: "border-b border-white/10 p-3 text-left" }, h("button", { className: "font-extrabold text-parallax-muted hover:text-white", onClick: () => updateSort(key) }, label))))
-      ),
-      h(
-        "tbody",
-        null,
-        rows.map((item, index) =>
-          h(
-            "tr",
-            { key: item.id, className: "transition hover:bg-parallax-blue/10" },
-            h("td", { className: "border-b border-white/10 p-3" }, h("span", { className: "grid h-10 w-10 place-items-center rounded-full font-black text-white", style: { background: rankColors[index % rankColors.length] } }, index + 1)),
-            h("td", { className: "border-b border-white/10 p-3" }, h("div", { className: "grid grid-cols-[40px_1fr] items-center gap-3" }, h(PatternIcon, { signal: item.signal }), h("span", null, h("strong", { className: "block" }, item.pattern), item.related && h("em", { className: "text-[.7rem] not-italic font-extrabold uppercase text-parallax-gold" }, "Related priority")))),
-            h("td", { className: "border-b border-white/10 p-3 text-parallax-muted" }, item.why),
-            h("td", { className: "border-b border-white/10 p-3" }, h("mark", { className: `rounded-md px-3 py-2 text-white ${item.impact === "High" ? "bg-red-500/30" : item.impact === "Medium" ? "bg-parallax-gold text-[#171100]" : "bg-parallax-teal text-[#062519]"}` }, item.impact)),
+        "table",
+        { className: "w-full min-w-[1080px] border-collapse text-sm" },
+        h(
+          "thead",
+          { className: "sticky top-0 z-10 bg-[#0B1745]/95 backdrop-blur" },
+          h("tr", null, headers.map(([key, label]) => h("th", { key, className: "border-b border-white/10 p-3 text-left" }, h("button", { className: "font-extrabold text-parallax-muted hover:text-white", onClick: () => updateSort(key) }, label))))
+        ),
+        h(
+          "tbody",
+          null,
+          rows.map((item, index) =>
             h(
-              "td",
-              { className: "border-b border-white/10 p-3" },
+              "tr",
+              { key: item.id, className: "transition hover:bg-parallax-blue/10" },
+              h("td", { className: "border-b border-white/10 p-3" }, h("span", { className: "grid h-10 w-10 place-items-center rounded-full font-black text-white", style: { background: rankColors[index % rankColors.length] } }, index + 1)),
+              h("td", { className: "border-b border-white/10 p-3" }, h("div", { className: "grid grid-cols-[40px_1fr] items-center gap-3" }, h(PatternIcon, { signal: item.signal }), h("span", null, h("strong", { className: "block" }, item.pattern), item.related && h("em", { className: "text-[.7rem] not-italic font-extrabold uppercase text-parallax-gold" }, "Related priority")))),
+              h("td", { className: "border-b border-white/10 p-3 text-parallax-muted" }, item.why),
+              h("td", { className: "border-b border-white/10 p-3" }, h("mark", { className: `rounded-md px-3 py-2 text-white ${item.impact === "High" ? "bg-red-500/30" : item.impact === "Medium" ? "bg-parallax-gold text-[#171100]" : "bg-parallax-teal text-[#062519]"}` }, item.impact)),
               h(
-                "span",
-                { className: "grid min-w-20 gap-1" },
-                h("b", { className: "text-xl text-white" }, item.score),
+                "td",
+                { className: "border-b border-white/10 p-3" },
                 h(
-                  "i",
-                  { className: "h-1.5 overflow-hidden rounded-full bg-white/10 not-italic" },
-                  h("span", { className: "block h-full rounded-full", style: { width: `${clamp(item.score, 20, 98)}%`, background: rankColors[index % rankColors.length] } })
+                  "span",
+                  { className: "grid min-w-20 gap-1" },
+                  h("b", { className: "text-xl text-white" }, item.score),
+                  h(
+                    "i",
+                    { className: "h-1.5 overflow-hidden rounded-full bg-white/10 not-italic" },
+                    h("span", { className: "block h-full rounded-full", style: { width: `${clamp(item.score, 20, 98)}%`, background: rankColors[index % rankColors.length] } })
+                  )
                 )
-              )
-            ),
-            h(
-              "td",
-              { className: "border-b border-white/10 p-3" },
-              h(MicroTrend, { values: item.trend.map((value) => clamp(value + item.delta / 4, 10, 92)), color: rankColors[index % rankColors.length], token: `${filterToken}-${item.id}` }),
-              h("span", { className: "mt-1 block text-xs text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts ${comparisonLabelFromToken(filterToken)}`)
-            ),
-            h("td", { className: "border-b border-white/10 p-3" }, h("strong", { className: "block" }, item.region), h("span", { className: "text-parallax-muted" }, item.division)),
-            h("td", { className: "border-b border-white/10 p-3" }, h("button", { className: "rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-parallax-gold hover:bg-parallax-gold/20" }, "Review ->"))
+              ),
+              h(
+                "td",
+                { className: "border-b border-white/10 p-3" },
+                h(MicroTrend, { values: item.trend.map((value) => clamp(value + item.delta / 4, 10, 92)), color: rankColors[index % rankColors.length], token: `${filterToken}-${item.id}` }),
+                h("span", { className: "mt-1 block text-xs text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts ${comparisonLabelFromToken(filterToken)}`)
+              ),
+              h("td", { className: "border-b border-white/10 p-3" }, h("strong", { className: "block" }, item.region), h("span", { className: "text-parallax-muted" }, item.division)),
+              h("td", { className: "border-b border-white/10 p-3" }, h("button", { className: "rounded-md border border-parallax-gold/50 bg-parallax-gold/10 px-3 py-2 text-parallax-gold hover:bg-parallax-gold/20" }, "Review ->"))
+            )
           )
         )
       )
     )
   );
 }
-
 function LowerDigest({ slicers, exactRows, contextRows, focusSignal, filterToken }) {
   const cardLimit = 3;
   const comparison = comparisonLabel(slicers.timeRange);
@@ -810,45 +819,90 @@ function MiniSignalRow({ item, onClick, openText = false, comparison = "vs. comp
   );
 }
 
-function Heatmap({ slicers, hoverCell, setHoverCell }) {
+function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode }) {
   const regions = filters.regions.slice(1);
   const activeSignals = slicers.selectedSignal === "All Signals" ? signals : [slicers.selectedSignal];
   const detail = hoverCell || {
     region: slicers.region === "All Regions" ? "West Region" : slicers.region,
     signal: slicers.selectedSignal === "All Signals" ? "Escalations" : slicers.selectedSignal
   };
-  const detailValue = heatValue(slicers, detail.region, detail.signal);
+  const regionRisk = (region) => Math.round(signals.reduce((sum, signal) => sum + heatValue(slicers, region, signal), 0) / signals.length);
+  const detailValue = heatmapMode === "total" ? regionRisk(detail.region) : heatValue(slicers, detail.region, detail.signal);
 
   return h(
     "section",
     { className: `${panelClass} overflow-x-auto`, style: { position: "relative", top: "auto", alignSelf: "start" } },
-    h("div", { className: "mb-4 flex items-center justify-between gap-4" }, h("h2", { className: "text-sm font-black uppercase" }, "Operational Signal Heatmap"), h("span", { className: "text-xs font-extrabold text-parallax-gold" }, slicers.timeRange)),
     h(
       "div",
-      { className: "grid min-w-[430px] grid-cols-[88px_repeat(6,minmax(46px,1fr))] gap-2" },
-      h("span"),
-      signals.map((signal) => h("strong", { key: signal, className: "text-center text-[.7rem] text-parallax-muted" }, signal)),
-      regions.flatMap((region) => [
-        h("b", { key: `${region}-label`, className: "grid items-center justify-start text-sm" }, region.replace(" Region", "")),
-        ...signals.map((signal) => {
-          const value = heatValue(slicers, region, signal);
-          return h(
-            "button",
-            {
-              key: `${region}-${signal}`,
-              className: `grid min-h-14 place-items-center rounded-lg border border-white/10 font-black transition hover:-translate-y-0.5 hover:border-parallax-teal/50 ${heatLevel(value)} ${activeSignals.includes(signal) ? "outline outline-2 outline-parallax-teal shadow-[0_0_22px_rgba(22,181,163,.22)]" : ""}`,
-              onMouseEnter: () => setHoverCell({ region, signal }),
-              onFocus: () => setHoverCell({ region, signal })
-            },
-            value
-          );
-        })
-      ])
+      { className: "mb-4 flex flex-wrap items-center justify-between gap-3" },
+      h("h2", { className: "text-sm font-black uppercase" }, "Operational Signal Heatmap"),
+      h(
+        "div",
+        { className: "flex items-center gap-2" },
+        h(
+          "button",
+          {
+            className: `rounded-md border px-3 py-1.5 text-[.68rem] font-black uppercase ${heatmapMode === "signals" ? "border-parallax-teal bg-parallax-teal/15 text-parallax-teal" : "border-white/10 bg-white/[.04] text-parallax-muted"}`,
+            onClick: () => setHeatmapMode("signals")
+          },
+          "Signal breakout"
+        ),
+        h(
+          "button",
+          {
+            className: `rounded-md border px-3 py-1.5 text-[.68rem] font-black uppercase ${heatmapMode === "total" ? "border-parallax-gold bg-parallax-gold/15 text-parallax-gold" : "border-white/10 bg-white/[.04] text-parallax-muted"}`,
+            onClick: () => setHeatmapMode("total")
+          },
+          "Total risk"
+        )
+      )
     ),
+    heatmapMode === "signals"
+      ? h(
+          "div",
+          { className: "grid min-w-[430px] grid-cols-[88px_repeat(6,minmax(46px,1fr))] gap-2" },
+          h("span"),
+          signals.map((signal) => h("strong", { key: signal, className: "text-center text-[.7rem] text-parallax-muted" }, signal)),
+          regions.flatMap((region) => [
+            h("b", { key: `${region}-label`, className: "grid items-center justify-start text-sm" }, region.replace(" Region", "")),
+            ...signals.map((signal) => {
+              const value = heatValue(slicers, region, signal);
+              return h(
+                "button",
+                {
+                  key: `${region}-${signal}`,
+                  className: `grid min-h-14 place-items-center rounded-lg border border-white/10 font-black transition hover:-translate-y-0.5 hover:border-parallax-teal/50 ${heatLevel(value)} ${activeSignals.includes(signal) ? "outline outline-2 outline-parallax-teal shadow-[0_0_22px_rgba(22,181,163,.22)]" : ""}`,
+                  onMouseEnter: () => setHoverCell({ region, signal }),
+                  onFocus: () => setHoverCell({ region, signal })
+                },
+                value
+              );
+            })
+          ])
+        )
+      : h(
+          "div",
+          { className: "grid min-w-[430px] gap-3" },
+          regions.map((region) => {
+            const value = regionRisk(region);
+            return h(
+              "button",
+              {
+                key: region,
+                className: `grid grid-cols-[90px_1fr_54px] items-center gap-3 rounded-lg border border-white/10 p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 ${heatLevel(value)}`,
+                onMouseEnter: () => setHoverCell({ region, signal: "Total Risk" }),
+                onFocus: () => setHoverCell({ region, signal: "Total Risk" })
+              },
+              h("strong", null, region.replace(" Region", "")),
+              h("span", { className: "h-3 overflow-hidden rounded-full bg-white/10" }, h("i", { className: "block h-full rounded-full bg-parallax-gold", style: { width: `${value}%` } })),
+              h("b", { className: "text-xl text-white" }, value)
+            );
+          })
+        ),
     h(
       "div",
       { className: "mt-4 rounded-lg border border-white/10 bg-white/[.045] p-4" },
-      h("strong", null, `${detail.region} / ${detail.signal}`),
+      h("strong", null, `${detail.region} / ${heatmapMode === "total" ? "Total Risk Score" : detail.signal}`),
       h(
         "dl",
         { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
@@ -973,3 +1027,4 @@ function ReviewLinks() {
 }
 
 createRoot(document.getElementById("root")).render(h(App));
+
