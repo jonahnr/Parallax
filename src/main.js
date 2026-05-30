@@ -365,6 +365,19 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
   const [label, level] = signalState(score);
   const things = topThings(slicers, rows);
   const signalColor = level === "low" ? "text-parallax-teal" : level === "medium" ? "text-parallax-gold" : level === "high" ? "text-orange-400" : "text-red-400";
+  const criticalRisks = rows.filter((item) => item.score >= 84).length;
+  const highImpactRisks = rows.filter((item) => item.impact === "High").length;
+  const acceleratingRisks = rows.filter((item) => item.delta > 10 && item.direction !== "recovery").length;
+  const reviewRegions = new Set(rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").map((item) => item.region)).size;
+  const criticality = score >= 84 ? "Critical" : score >= 70 ? "High" : score >= 55 ? "Medium" : "Low";
+  const criticalityScore = clamp((score / 10).toFixed(1), 1, 10);
+  const kpis = [
+    { icon: "alert", label: "Critical Risks", value: criticalRisks, delta: "+1", tone: "text-red-400" },
+    { icon: "alert", label: "High Impact Risks", value: highImpactRisks, delta: "+2", tone: "text-red-400" },
+    { icon: "trend", label: "Accelerating Risks", value: acceleratingRisks, delta: "+1", tone: "text-parallax-gold" },
+    { icon: "map", label: "Regions Requiring Review", value: reviewRegions, delta: "+1", tone: "text-parallax-teal" }
+  ];
+  const changeItems = buildChangeItems(slicers, things);
 
   return h(
     "section",
@@ -372,74 +385,100 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
     h("h2", { className: "mb-4 text-sm font-black uppercase" }, "1. Executive Summary"),
     h(
       "div",
-      { className: "grid gap-4 xl:grid-cols-[minmax(210px,.72fr)_minmax(360px,1.65fr)_minmax(220px,.72fr)]" },
+      { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-3 xl:grid-cols-6" },
       h(
         "article",
-        { className: `${softCardClass} grid min-h-52 place-items-center text-center` },
-        h("span", { className: "text-sm font-extrabold" }, "Overall Operational Risk Score"),
+        { className: "grid min-h-44 place-items-center border-white/10 p-4 text-center md:border-r" },
+        h("span", { className: "text-xs font-extrabold uppercase text-parallax-muted" }, "Risk Score (/100)"),
         h(
           "div",
-          { className: "my-4 grid place-items-center gap-2" },
-          h(
-            "span",
-            { className: "relative grid h-24 w-24 place-items-center rounded-full border border-white/15 bg-white/[.05] shadow-gold" },
-            h("b", { className: "text-4xl font-black text-white" }, score),
-            h("i", { className: "absolute bottom-5 right-5 text-xs not-italic text-parallax-muted" }, "/100")
-          ),
-          h("strong", { className: `text-lg ${signalColor}` }, label)
+          { className: "my-3 flex items-end justify-center gap-2" },
+          h(RiskDonut, { score, level }),
+          h("b", { className: "pb-3 text-xl text-parallax-muted" }, "/100")
         ),
-        h("em", { className: "not-italic text-parallax-muted" }, `${score >= 70 ? "Elevated risk" : "Controlled risk"} ${comparisonLabel(slicers.timeRange)}`),
-        h("p", { className: "mt-3 max-w-48 leading-snug" }, level === "low" ? "Improving across key signal areas" : `Worsening across ${clamp(Math.round(score / 12), 3, 9)} of 9 key signal areas`)
+        h("strong", { className: `text-sm uppercase ${signalColor}` }, label),
+        h("em", { className: "mt-1 block text-xs not-italic text-red-400" }, `${score >= 70 ? "v" : "^"} ${Math.abs(score - 80)} pts ${comparisonLabel(slicers.timeRange)}`)
       ),
-      h(
-        "article",
-        { className: `${softCardClass} min-h-60` },
-        h("span", { className: "text-sm font-extrabold" }, "Top 3 Things to Know"),
-        ensureThreeThings(things).map((item, index) =>
-          h(
-            "div",
-            { key: item.id, className: "mt-5 grid grid-cols-[32px_1fr] gap-3" },
-            h("b", { className: "grid h-8 w-8 place-items-center rounded-full bg-red-500 font-black text-white shadow-[0_0_18px_rgba(239,68,68,.22)]" }, index + 1),
-            h(
-              "p",
-              { className: "text-sm text-parallax-muted" },
-              h("strong", { className: "mb-1 block text-white" }, item.pattern),
-              item.why,
-              h("span", { className: "mt-2 block text-xs font-extrabold uppercase text-parallax-gold" }, comparisonLabel(slicers.timeRange))
-            )
-          )
+      kpis.map((item) =>
+        h(
+          "article",
+          { key: item.label, className: "grid min-h-44 place-items-center border-white/10 p-4 text-center md:border-r" },
+          h(Icon, { name: item.icon, className: `h-9 w-9 ${item.tone}` }),
+          h("span", { className: "text-xs font-extrabold text-parallax-muted" }, item.label),
+          h("b", { className: "text-4xl font-black text-white" }, item.value),
+          h("em", { className: "not-italic text-red-400" }, `${item.delta} ${comparisonLabel(slicers.timeRange)}`)
         )
       ),
       h(
         "article",
-        { className: `${softCardClass} grid gap-2` },
-        h("span", { className: "text-sm font-extrabold" }, "Key Signal Direction"),
-        signals.map((signal) => {
-          const metric = signalDirectionMetric(slicers, signal);
-          return h(
+        { className: "grid min-h-44 place-items-center p-4 text-center" },
+        h(Icon, { name: "trend", className: "h-9 w-9 text-red-400" }),
+        h("span", { className: "text-xs font-extrabold text-parallax-muted" }, "Operational Criticality"),
+        h("b", { className: `text-3xl font-black uppercase ${signalColor}` }, criticality),
+        h("em", { className: "not-italic text-red-400" }, `${criticalityScore} / 10`)
+      )
+    ),
+    h(
+      "article",
+      { className: "mt-4 rounded-lg border border-white/10 bg-white/[.04] p-4" },
+      h("div", { className: "mb-3 flex flex-wrap items-center justify-between gap-3" }, h("span", { className: "text-sm font-extrabold" }, "5 Things Changing"), h("em", { className: "text-xs not-italic text-parallax-muted" }, "Merged signal direction + leadership summary")),
+      h(
+        "div",
+        { className: "grid gap-2 md:grid-cols-5" },
+        changeItems.map((item) =>
+          h(
             "button",
-            {
-              key: signal,
-              className: "grid grid-cols-[1fr_auto] items-center gap-3 border-b border-white/10 py-2 text-left text-sm transition hover:text-parallax-teal",
-              onClick: () => focusSignal(signal)
-            },
-            h("strong", null, signal),
-            h(
-              "span",
-              { className: "flex items-center gap-2" },
-              h(DirectionArrow, { direction: metric.direction }),
-              h(
-                "span",
-                { className: "text-right" },
-                h("b", { className: metric.delta > 0 ? "block text-red-400" : metric.delta < 0 ? "block text-parallax-teal" : "block text-parallax-muted" }, `${metric.delta > 0 ? "+" : ""}${metric.delta} pts`),
-                h("em", { className: "block text-[.65rem] not-italic text-parallax-muted" }, metric.level)
-              )
-            )
-          );
-        })
+            { key: item.label, className: "grid gap-2 rounded-lg border border-white/10 bg-white/[.035] p-3 text-left transition hover:border-parallax-teal/50 hover:bg-parallax-blue/15", onClick: () => focusSignal(item.signal) },
+            h("span", { className: "flex items-center justify-between gap-2" }, h("strong", { className: "text-sm text-white" }, item.label), h(DirectionArrow, { direction: item.direction })),
+            h("b", { className: item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts`),
+            h("em", { className: "text-xs not-italic text-parallax-muted" }, item.summary)
+          )
+        )
       )
     )
   );
+}
+
+function RiskDonut({ score, level }) {
+  const color = level === "low" ? "#16B5A3" : level === "medium" ? "#F5B544" : level === "high" ? "#F97316" : "#EF4444";
+  return h(
+    "span",
+    {
+      className: "grid h-24 w-24 place-items-center rounded-full p-2 shadow-gold",
+      style: { background: `conic-gradient(${color} ${score * 3.6}deg, rgba(255,255,255,.10) 0deg)` }
+    },
+    h("span", { className: "grid h-full w-full place-items-center rounded-full bg-[#0B1745]" }, h("b", { className: "text-4xl font-black text-white" }, score))
+  );
+}
+
+function buildChangeItems(slicers, things) {
+  const priority = ensureThreeThings(things).map((item) => {
+    const metric = signalDirectionMetric(slicers, item.signal);
+    return {
+      label: item.pattern,
+      signal: item.signal,
+      delta: metric.delta,
+      direction: metric.direction,
+      summary: metric.level
+    };
+  });
+  const directional = signals
+    .map((signal) => ({ signal, ...signalDirectionMetric(slicers, signal) }))
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .map((item) => ({
+      label: item.signal,
+      signal: item.signal,
+      delta: item.delta,
+      direction: item.direction,
+      summary: item.level
+    }));
+
+  const seen = new Set();
+  return [...priority, ...directional].filter((item) => {
+    if (seen.has(item.label)) return false;
+    seen.add(item.label);
+    return true;
+  }).slice(0, 5);
 }
 
 function DirectionArrow({ direction }) {
