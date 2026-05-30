@@ -154,7 +154,7 @@ function App() {
       h(
         "div",
         { className: "grid gap-4" },
-        h(ExecutiveSummary, { slicers, rows: exactRows, focusSignal }),
+        h(ExecutiveSummaryPolished, { slicers, rows: exactRows, focusSignal }),
         h(LeadershipTable, {
           rows: leadershipRows,
           totalCount: allLeadershipRows.length,
@@ -365,17 +365,15 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
   const [label, level] = signalState(score);
   const things = topThings(slicers, rows);
   const signalColor = level === "low" ? "text-parallax-teal" : level === "medium" ? "text-parallax-gold" : level === "high" ? "text-orange-400" : "text-red-400";
-  const criticalRisks = rows.filter((item) => item.score >= 84).length;
-  const highImpactRisks = rows.filter((item) => item.impact === "High").length;
-  const acceleratingRisks = rows.filter((item) => item.delta > 10 && item.direction !== "recovery").length;
-  const reviewRegions = new Set(rows.filter((item) => item.review === "Needs Review" || item.review === "Assigned").map((item) => item.region)).size;
+  const metrics = executiveMetrics(slicers, rows);
+  const scoreDelta = score - metrics.previousScore;
   const criticality = score >= 84 ? "Critical" : score >= 70 ? "High" : score >= 55 ? "Medium" : "Low";
   const criticalityScore = clamp((score / 10).toFixed(1), 1, 10);
   const kpis = [
-    { icon: "alert", label: "Critical Risks", value: criticalRisks, delta: "+1", tone: "text-red-400" },
-    { icon: "alert", label: "High Impact Risks", value: highImpactRisks, delta: "+2", tone: "text-red-400" },
-    { icon: "trend", label: "Accelerating Risks", value: acceleratingRisks, delta: "+1", tone: "text-parallax-gold" },
-    { icon: "map", label: "Regions Requiring Review", value: reviewRegions, delta: "+1", tone: "text-parallax-teal" }
+    { icon: "alert", label: "Critical Risks", value: metrics.criticalRisks.current, delta: metrics.criticalRisks.delta, tone: "text-red-400" },
+    { icon: "alert", label: "High Impact Risks", value: metrics.highImpactRisks.current, delta: metrics.highImpactRisks.delta, tone: "text-red-400" },
+    { icon: "trend", label: "Accelerating Risks", value: metrics.acceleratingRisks.current, delta: metrics.acceleratingRisks.delta, tone: "text-parallax-gold" },
+    { icon: "map", label: "Regions Requiring Review", value: metrics.reviewRegions.current, delta: metrics.reviewRegions.delta, tone: "text-parallax-teal" }
   ];
   const changeItems = buildChangeItems(slicers, things);
 
@@ -385,10 +383,10 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
     h("h2", { className: "mb-4 text-sm font-black uppercase" }, "1. Executive Summary"),
     h(
       "div",
-      { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-3 xl:grid-cols-6" },
+      { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-2 xl:grid-cols-[1.55fr_repeat(5,minmax(0,1fr))]" },
       h(
         "article",
-        { className: "grid min-h-44 place-items-center border-white/10 p-4 text-center md:border-r" },
+        { className: "grid min-h-48 place-items-center border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
         h("span", { className: "text-xs font-extrabold uppercase text-parallax-muted" }, "Risk Score (/100)"),
         h(
           "div",
@@ -397,21 +395,21 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
           h("b", { className: "pb-3 text-xl text-parallax-muted" }, "/100")
         ),
         h("strong", { className: `text-sm uppercase ${signalColor}` }, label),
-        h("em", { className: "mt-1 block text-xs not-italic text-red-400" }, `${score >= 70 ? "v" : "^"} ${Math.abs(score - 80)} pts ${comparisonLabel(slicers.timeRange)}`)
+        h("em", { className: `mt-1 block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, `${scoreDelta > 0 ? "▲" : scoreDelta < 0 ? "▼" : "■"} ${Math.abs(scoreDelta)} pts ${comparisonLabel(slicers.timeRange)}`)
       ),
       kpis.map((item) =>
         h(
           "article",
-          { key: item.label, className: "grid min-h-44 place-items-center border-white/10 p-4 text-center md:border-r" },
+          { key: item.label, className: "grid min-h-48 place-items-center border-white/10 p-4 text-center md:border-r" },
           h(Icon, { name: item.icon, className: `h-9 w-9 ${item.tone}` }),
           h("span", { className: "text-xs font-extrabold text-parallax-muted" }, item.label),
           h("b", { className: "text-4xl font-black text-white" }, item.value),
-          h("em", { className: "not-italic text-red-400" }, `${item.delta} ${comparisonLabel(slicers.timeRange)}`)
+          h("em", { className: `not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, `${item.delta > 0 ? "▲" : item.delta < 0 ? "▼" : "■"} ${Math.abs(item.delta)} ${comparisonLabel(slicers.timeRange)}`)
         )
       ),
       h(
         "article",
-        { className: "grid min-h-44 place-items-center p-4 text-center" },
+        { className: "grid min-h-48 place-items-center p-4 text-center" },
         h(Icon, { name: "trend", className: "h-9 w-9 text-red-400" }),
         h("span", { className: "text-xs font-extrabold text-parallax-muted" }, "Operational Criticality"),
         h("b", { className: `text-3xl font-black uppercase ${signalColor}` }, criticality),
@@ -437,6 +435,129 @@ function ExecutiveSummary({ slicers, rows, focusSignal }) {
       )
     )
   );
+}
+
+function ExecutiveSummaryPolished({ slicers, rows, focusSignal }) {
+  const score = overallSignal(rows);
+  const [label, level] = signalState(score);
+  const things = topThings(slicers, rows);
+  const signalColor = level === "low" ? "text-parallax-teal" : level === "medium" ? "text-parallax-gold" : level === "high" ? "text-orange-400" : "text-red-400";
+  const metrics = executiveMetrics(slicers, rows);
+  const scoreDelta = score - metrics.previousScore;
+  const criticality = score >= 84 ? "Critical" : score >= 70 ? "High" : score >= 55 ? "Medium" : "Low";
+  const criticalityScore = clamp((score / 10).toFixed(1), 1, 10);
+  const comparison = comparisonLabel(slicers.timeRange);
+  const kpis = [
+    { icon: "alert", label: "Critical Risks", value: metrics.criticalRisks.current, delta: metrics.criticalRisks.delta, tone: "text-red-400" },
+    { icon: "alert", label: "High Impact Risks", value: metrics.highImpactRisks.current, delta: metrics.highImpactRisks.delta, tone: "text-red-400" },
+    { icon: "trend", label: "Accelerating Risks", value: metrics.acceleratingRisks.current, delta: metrics.acceleratingRisks.delta, tone: "text-parallax-gold" },
+    { icon: "map", label: "Regions Requiring Review", value: metrics.reviewRegions.current, delta: metrics.reviewRegions.delta, tone: "text-parallax-teal" }
+  ];
+  const changeItems = buildChangeItems(slicers, things);
+
+  return h(
+    "section",
+    { className: panelClass },
+    h("h2", { className: "mb-4 text-sm font-black uppercase" }, "1. Executive Summary"),
+    h(
+      "div",
+      { className: "grid overflow-hidden rounded-lg border border-white/10 bg-white/[.035] md:grid-cols-2 xl:grid-cols-[1.55fr_repeat(5,minmax(0,1fr))]" },
+      h(
+        "article",
+        { className: "grid min-h-48 place-items-center border-white/10 bg-white/[.035] p-5 text-center md:border-r" },
+        h("span", { className: "text-xs font-extrabold uppercase text-parallax-muted" }, "Risk Score (/100)"),
+        h(
+          "div",
+          { className: "my-3 flex items-end justify-center gap-2" },
+          h(RiskDonut, { score, level }),
+          h("b", { className: "pb-3 text-xl text-parallax-muted" }, "/100")
+        ),
+        h("strong", { className: `text-sm uppercase ${signalColor}` }, label),
+        h("em", { className: `mt-1 block text-xs not-italic ${scoreDelta > 0 ? "text-red-400" : scoreDelta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(scoreDelta, "pts", comparison))
+      ),
+      kpis.map((item) =>
+        h(
+          "article",
+          { key: item.label, className: "grid min-h-48 place-items-center border-white/10 p-4 text-center md:border-r" },
+          h(Icon, { name: item.icon, className: `h-9 w-9 ${item.tone}` }),
+          h("span", { className: "text-xs font-extrabold text-parallax-muted" }, item.label),
+          h("b", { className: "text-4xl font-black text-white" }, item.value),
+          h("em", { className: `text-xs not-italic ${item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted"}` }, deltaLabel(item.delta, "", comparison))
+        )
+      ),
+      h(
+        "article",
+        { className: "grid min-h-48 place-items-center p-4 text-center" },
+        h(Icon, { name: "trend", className: "h-9 w-9 text-red-400" }),
+        h("span", { className: "text-xs font-extrabold text-parallax-muted" }, "Operational Criticality"),
+        h("b", { className: `text-3xl font-black uppercase ${signalColor}` }, criticality),
+        h("em", { className: "not-italic text-red-400" }, `${criticalityScore} / 10`)
+      )
+    ),
+    h(
+      "article",
+      { className: "mt-4 rounded-lg border border-white/10 bg-white/[.04] p-4" },
+      h("div", { className: "mb-3 flex flex-wrap items-center justify-between gap-3" }, h("span", { className: "text-sm font-extrabold" }, "5 Things Changing"), h("em", { className: "text-xs not-italic text-parallax-muted" }, comparison)),
+      h(
+        "div",
+        { className: "grid gap-2 md:grid-cols-5" },
+        changeItems.map((item) =>
+          h(
+            "button",
+            { key: item.label, className: "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg border border-white/10 bg-white/[.035] p-3 text-left transition hover:-translate-y-0.5 hover:border-parallax-teal/50 hover:bg-parallax-blue/15", onClick: () => focusSignal(item.signal) },
+            h("strong", { className: "truncate text-sm text-white" }, item.label),
+            h("span", { className: "flex items-center gap-2" }, h("b", { className: item.delta > 0 ? "text-red-400" : item.delta < 0 ? "text-parallax-teal" : "text-parallax-muted" }, `${item.delta > 0 ? "+" : ""}${item.delta} pts`), h(DirectionArrow, { direction: item.direction })),
+            h("em", { className: "col-span-2 truncate text-xs not-italic text-parallax-muted" }, `${item.summary} / ${item.signal}`)
+          )
+        )
+      )
+    )
+  );
+}
+
+function executiveMetrics(slicers, rows) {
+  const previousRows = previousComparableRows(slicers, rows);
+  const measure = (source) => ({
+    score: overallSignal(source),
+    criticalRisks: source.filter((item) => item.score >= 84).length,
+    highImpactRisks: source.filter((item) => item.impact === "High").length,
+    acceleratingRisks: source.filter((item) => item.delta > 10 && item.direction !== "recovery").length,
+    reviewRegions: new Set(source.filter((item) => item.review === "Needs Review" || item.review === "Assigned").map((item) => item.region)).size
+  });
+  const current = measure(rows);
+  const previous = measure(previousRows);
+  return {
+    previousScore: previous.score,
+    criticalRisks: metricDelta(current.criticalRisks, previous.criticalRisks),
+    highImpactRisks: metricDelta(current.highImpactRisks, previous.highImpactRisks),
+    acceleratingRisks: metricDelta(current.acceleratingRisks, previous.acceleratingRisks),
+    reviewRegions: metricDelta(current.reviewRegions, previous.reviewRegions)
+  };
+}
+
+function previousComparableRows(slicers, rows) {
+  const adjustment =
+    {
+      "Current Week": -5,
+      "Prior 7 Days": -3,
+      "4-Week Rolling": -7,
+      "Quarter to Date": -9
+    }[slicers.timeRange] || -5;
+  return rows.map((item, index) => ({
+    ...item,
+    score: clamp(item.score + adjustment + (index % 3) - 1, 28, 98),
+    delta: item.delta - 3
+  }));
+}
+
+function metricDelta(current, previous) {
+  return { current, delta: current - previous };
+}
+
+function deltaLabel(delta, unit = "", comparison = "") {
+  const direction = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+  const suffix = unit ? ` ${unit}` : "";
+  return `${direction} ${Math.abs(delta)}${suffix} ${comparison}`.trim();
 }
 
 function RiskDonut({ score, level }) {
@@ -762,7 +883,7 @@ function fillRows(primary, fallback) {
 function MiniCard({ title, summary, meta, children }) {
   return h(
     "article",
-    { className: `${panelClass} grid max-h-[520px] content-start gap-3 overflow-y-auto pr-2` },
+    { className: `${panelClass} grid max-h-[460px] content-start gap-3 overflow-y-auto pr-2` },
     h("div", { className: "grid gap-1" }, h("h2", { className: "text-sm font-black uppercase" }, title), summary && h("p", { className: "text-xs font-extrabold text-parallax-gold" }, summary), meta && h("p", { className: "text-xs text-parallax-muted" }, meta)),
     children
   );
@@ -867,6 +988,11 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
   };
   const regionRisk = (region) => Math.round(signals.reduce((sum, signal) => sum + heatValue(slicers, region, signal), 0) / signals.length);
   const detailValue = heatmapMode === "total" ? regionRisk(detail.region) : heatValue(slicers, detail.region, detail.signal);
+  const regionValues = regions.map((region) => ({ region, value: regionRisk(region) }));
+  const regionsAboveThreshold = regionValues.filter((item) => item.value >= 70).length;
+  const highestSignal = signals
+    .map((signal) => ({ signal, value: heatValue(slicers, detail.region, signal) }))
+    .sort((a, b) => b.value - a.value)[0];
 
   return h(
     "section",
@@ -942,18 +1068,31 @@ function Heatmap({ slicers, hoverCell, setHoverCell, heatmapMode, setHeatmapMode
       "div",
       { className: "mt-4 rounded-lg border border-white/10 bg-white/[.045] p-4" },
       h("strong", null, `${detail.region} / ${heatmapMode === "total" ? "Total Risk Score" : detail.signal}`),
-      h(
-        "dl",
-        { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
-        h("dt", null, "Signal score"),
-        h("dd", { className: "font-extrabold text-white" }, detailValue),
-        h("dt", null, "Escalation rate"),
-        h("dd", { className: "font-extrabold text-white" }, `${clamp(detailValue - 39, 6, 58)}%`),
-        h("dt", null, "Corrective action aging"),
-        h("dd", { className: "font-extrabold text-white" }, `${clamp(detailValue - 44, 8, 49)} days`),
-        h("dt", null, "Recommended review"),
-        h("dd", { className: "font-extrabold text-white" }, detailValue >= 75 ? "Leadership" : "Regional")
-      )
+      heatmapMode === "total"
+        ? h(
+            "dl",
+            { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
+            h("dt", null, "Aggregate risk score"),
+            h("dd", { className: "font-extrabold text-white" }, detailValue),
+            h("dt", null, "Highest contributing signal"),
+            h("dd", { className: "font-extrabold text-white" }, `${highestSignal.signal} (${highestSignal.value})`),
+            h("dt", null, "Regions above threshold"),
+            h("dd", { className: "font-extrabold text-white" }, `${regionsAboveThreshold} of ${regions.length}`),
+            h("dt", null, "Recommended review"),
+            h("dd", { className: "font-extrabold text-white" }, detailValue >= 75 ? "Leadership" : "Regional")
+          )
+        : h(
+            "dl",
+            { className: "mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm text-parallax-muted" },
+            h("dt", null, "Signal score"),
+            h("dd", { className: "font-extrabold text-white" }, detailValue),
+            h("dt", null, "Escalation rate"),
+            h("dd", { className: "font-extrabold text-white" }, `${clamp(detailValue - 39, 6, 58)}%`),
+            h("dt", null, "Corrective action aging"),
+            h("dd", { className: "font-extrabold text-white" }, `${clamp(detailValue - 44, 8, 49)} days`),
+            h("dt", null, "Recommended review"),
+            h("dd", { className: "font-extrabold text-white" }, detailValue >= 75 ? "Leadership" : "Regional")
+          )
     )
   );
 }
@@ -974,7 +1113,7 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
     h(
       "div",
       { className: "flex items-center justify-between gap-3" },
-      h("h2", { className: "text-sm font-black uppercase" }, "Decision Intelligence Matrix"),
+      h("h2", { className: "text-sm font-black uppercase" }, "AI Decision Briefing"),
       h("span", { className: "rounded-full border border-parallax-teal/30 bg-parallax-teal/10 px-3 py-1 text-[.68rem] font-black uppercase text-parallax-teal" }, slicers.timeRange)
     ),
     h(
@@ -988,7 +1127,7 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
       h(
         "article",
         { className: "rounded-lg border border-parallax-blue/30 bg-parallax-blue/10 p-4 text-sm text-parallax-muted shadow-[0_0_30px_rgba(31,106,229,.10)]" },
-        h("span", { className: "mb-3 flex items-center gap-2" }, h(Icon, { name: "bot", className: "h-6 w-6 text-parallax-teal" }), h("strong", { className: "text-white" }, "AI Weekly Summary")),
+        h("span", { className: "mb-3 flex items-center gap-2" }, h(Icon, { name: "bot", className: "h-6 w-6 text-parallax-teal" }), h("strong", { className: "text-white" }, "Copilot Weekly Summary")),
         h(
           "p",
           { className: "leading-relaxed" },
@@ -998,7 +1137,7 @@ function DecisionMatrix({ rows, slicers, focusSignal }) {
         ),
         h(
           "div",
-          { className: "mt-4 grid gap-2" },
+          { className: "mt-4 grid gap-2 md:grid-cols-2" },
           h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "Suggested intervention"), h("em", { className: "not-italic" }, interventionFor(top.signal))),
           h("span", { className: "rounded-md border border-white/10 bg-white/[.05] p-2" }, h("strong", { className: "block text-white" }, "What changed"), h("em", { className: "not-italic" }, `${top.signal} moved ${top.delta > 0 ? "+" : ""}${top.delta} pts ${comparisonLabel(slicers.timeRange)}.`))
         ),
