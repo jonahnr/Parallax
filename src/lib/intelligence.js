@@ -2,9 +2,9 @@ import { patterns } from "../data/digestData.js";
 
 export const defaultSlicers = {
   region: "All Regions",
-  division: "All Divisions",
-  selectedSignal: "All Signals",
-  timeRange: "Current Week",
+  division: "Manufacturing & Automotive",
+  selectedSignal: "All Risk Types",
+  timeRange: "Previous Week",
   impact: "All Impact",
   review: "All Review States"
 };
@@ -15,20 +15,20 @@ export function clamp(value, min, max) {
 
 export function rangeBoost(timeRange) {
   return {
-    "Current Week": 0,
-    "Prior 7 Days": -3,
-    "4-Week Rolling": 4,
-    "Quarter to Date": 7
+    "Previous Week": 0,
+    "Previous Month": 4,
+    "Previous Quarter": 7,
+    "Previous Year": 10
   }[timeRange] || 0;
 }
 
 export function comparisonLabel(timeRange) {
   return (
     {
-      "Current Week": "vs. prior week",
-      "Prior 7 Days": "vs. previous 7 days",
-      "4-Week Rolling": "vs. rolling baseline",
-      "Quarter to Date": "vs. quarter baseline"
+      "Previous Week": "vs. prior period comparison",
+      "Previous Month": "vs. prior month comparison",
+      "Previous Quarter": "vs. prior quarter comparison",
+      "Previous Year": "vs. prior year comparison"
     }[timeRange] || "vs. comparison period"
   );
 }
@@ -44,10 +44,10 @@ export function comparedToLabel(timeRange) {
   const formatRange = (start, end) => `${formatShortDate(start)} - ${formatShortDate(end)}`;
   return (
     {
-      "Current Week": [formatRange(recentCompleteStart, addDays(currentWeekMonday, -1)), "Most Recent Completed Week"],
-      "Prior 7 Days": [formatRange(addDays(reportingStart, -7), addDays(reportingStart, -1)), "Previous 7 Days"],
-      "4-Week Rolling": [formatRange(addDays(reportingEnd, -27), reportingEnd), "Rolling Baseline"],
-      "Quarter to Date": [formatRange(startOfQuarter(reportingEnd), reportingEnd), "QTD Baseline"]
+      "Previous Week": [formatRange(recentCompleteStart, addDays(currentWeekMonday, -1)), "Previous Week"],
+      "Previous Month": [formatRange(addDays(reportingEnd, -30), reportingEnd), "Previous Month Trend"],
+      "Previous Quarter": [formatRange(addDays(reportingEnd, -90), reportingEnd), "Previous Quarter Trend"],
+      "Previous Year": [formatRange(addDays(reportingEnd, -365), reportingEnd), "Previous Year Trend"]
     }[timeRange] || ["Configured comparison", "Baseline"]
   );
 }
@@ -70,10 +70,10 @@ function formatShortDate(date) {
 export function baselineLabel(timeRange) {
   return (
     {
-      "Current Week": "4-Week Rolling + Prior 30 Days",
-      "Prior 7 Days": "Previous 7-Day Rolling Average",
-      "4-Week Rolling": "Prior 4-Week Rolling Average",
-      "Quarter to Date": "Prior Quarter + 12-Week Trend"
+      "Previous Week": "Prior Period Operating Baseline",
+      "Previous Month": "Prior Month Operating Baseline",
+      "Previous Quarter": "Prior Quarter Operating Baseline",
+      "Previous Year": "Prior Year Operating Baseline"
     }[timeRange] || "Operational Baseline"
   );
 }
@@ -102,7 +102,7 @@ export function scopedRows(slicers, options = {}) {
   if (slicers.region !== "All Regions") {
     rows = rows.filter((item) => item.region === slicers.region || item.region === "All Regions");
   }
-  if (!ignoreDivision && slicers.division !== "All Divisions") {
+  if (!ignoreDivision) {
     rows = rows.filter((item) => item.division === slicers.division);
   }
   if (!ignoreImpact && slicers.impact !== "All Impact") {
@@ -111,7 +111,7 @@ export function scopedRows(slicers, options = {}) {
   if (!ignoreReview && slicers.review !== "All Review States") {
     rows = rows.filter((item) => item.review === slicers.review);
   }
-  if (!ignoreSignal && slicers.selectedSignal !== "All Signals") {
+  if (!ignoreSignal && slicers.selectedSignal !== "All Risk Types") {
     rows = rows.filter((item) => item.signal === slicers.selectedSignal);
   }
 
@@ -125,12 +125,28 @@ export function contextPatterns(slicers, options = {}) {
 export function activePatterns(slicers, sort) {
   const rows = contextPatterns(slicers);
   return [...rows].sort((a, b) => {
-    if (a[sort.key] === b[sort.key]) return 0;
-    return (a[sort.key] > b[sort.key] ? 1 : -1) * sort.dir;
+    const aValue = sortValue(a, sort.key);
+    const bValue = sortValue(b, sort.key);
+    if (aValue === bValue) return b.score - a.score || a.pattern.localeCompare(b.pattern);
+    if (typeof aValue === "number" && typeof bValue === "number") return (aValue - bValue) * sort.dir;
+    return String(aValue).localeCompare(String(bValue)) * sort.dir;
   });
 }
 
+function sortValue(item, key) {
+  if (key === "id") return item.score;
+  if (key === "action") return item.signal;
+  return item[key];
+}
+
 export function leadershipItems(slicers, exactRows, limit = 5) {
+  const hasFocusedFilters =
+    slicers.region !== "All Regions" ||
+    slicers.selectedSignal !== "All Risk Types" ||
+    slicers.impact !== "All Impact" ||
+    slicers.review !== "All Review States";
+  if (hasFocusedFilters) return exactRows.slice(0, limit);
+
   const seen = new Set();
   const items = [];
   const add = (item, related = false) => {
@@ -145,7 +161,7 @@ export function leadershipItems(slicers, exactRows, limit = 5) {
     contextPatterns(slicers, { ignoreImpact: true }),
     contextPatterns(slicers, { ignoreReview: true }),
     contextPatterns(slicers, { ignoreSignal: true, ignoreImpact: true, ignoreReview: true }),
-    scoredPatterns(slicers).sort((a, b) => b.score - a.score)
+    scoredPatterns(slicers).filter((item) => item.division === slicers.division).sort((a, b) => b.score - a.score)
   ]
     .flat()
     .forEach((item) => add(item, true));
@@ -161,7 +177,7 @@ export function topThings(slicers, exactRows) {
       selectedIds.add(item.id);
       items.push({
         ...item,
-        kind: item.direction === "recovery" ? "recovery" : item.signal === "Open Text" ? "open-text" : "risk"
+        kind: item.direction === "recovery" ? "recovery" : "risk"
       });
     });
     return items;
@@ -171,22 +187,17 @@ export function topThings(slicers, exactRows) {
     ignoreImpact: true,
     ignoreReview: true
   }).filter((item) => item.direction === "recovery");
-  const openText = contextPatterns(slicers, {
-    ignoreSignal: true,
-    ignoreImpact: true
-  }).filter((item) => item.signal === "Open Text");
+  const openText = [];
   const riskRows = exactRows.filter((item) => item.direction !== "recovery");
   const pool =
     slicers.impact === "Low"
       ? [...exactRows, ...recovery, ...openText]
-      : slicers.selectedSignal === "Open Text"
-        ? [...exactRows, ...openText, ...recovery]
-        : [...riskRows, ...openText, ...recovery];
+      : [...riskRows, ...openText, ...recovery];
 
   return [
     pool,
     contextPatterns(slicers, { ignoreSignal: true, ignoreImpact: true, ignoreReview: true }),
-    scoredPatterns({ ...slicers, region: "All Regions", division: "All Divisions", selectedSignal: "All Signals" }).sort(
+    scoredPatterns({ ...slicers, region: "All Regions", selectedSignal: "All Risk Types" }).filter((item) => item.division === slicers.division).sort(
       (a, b) => b.score - a.score
     )
   ].reduce(addItems, []);
@@ -205,8 +216,12 @@ export function signalState(score) {
 }
 
 export function heatValue(slicers, region, signal) {
-  const rows = scoredPatterns({ ...slicers, selectedSignal: "All Signals" }).filter(
-    (item) => (region === "All Regions" || item.region === region || item.region === "All Regions") && item.signal === signal
+  const rows = scoredPatterns({ ...slicers, selectedSignal: "All Risk Types" }).filter(
+    (item) =>
+      item.division === slicers.division &&
+      (region === "All Regions" || item.region === region || item.region === "All Regions") &&
+      (slicers.selectedSignal === "All Risk Types" || item.signal === slicers.selectedSignal || item.signal === signal) &&
+      item.signal === signal
   );
   const fallback = 46 + ((region.length * 7 + signal.length * 5 + slicers.timeRange.length) % 28);
   return clamp(
@@ -221,13 +236,13 @@ export function signalDirectionMetric(slicers, signal) {
   const current = heatValue(slicers, region, signal);
   const previousBoost =
     {
-      "Current Week": -4,
-      "Prior 7 Days": -2,
-      "4-Week Rolling": -7,
-      "Quarter to Date": -10
+      "Previous Week": -4,
+      "Previous Month": -7,
+      "Previous Quarter": -10,
+      "Previous Year": -13
     }[slicers.timeRange] || -4;
   const matchingRows = scoredPatterns(slicers).filter(
-    (item) => (region === "All Regions" || item.region === region || item.region === "All Regions") && item.signal === signal
+    (item) => item.division === slicers.division && (region === "All Regions" || item.region === region || item.region === "All Regions") && item.signal === signal
   );
   const trendDelta = matchingRows.length
     ? Math.round(matchingRows.reduce((sum, item) => sum + (item.trend[item.trend.length - 1] - item.trend[0]), 0) / matchingRows.length / 3)

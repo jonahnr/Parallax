@@ -1,404 +1,146 @@
-export const signals = ["Escalations", "Actions / CA", "Assignments", "Workflows", "Compliance", "Open Text"];
+const industries = {
+  "Manufacturing & Automotive": {
+    audience: "VP, Manufacturing Operations",
+    scope: "Assembly, quality, maintenance, supplier flow",
+    summary: "Builds an operational view across plant throughput, quality escapes, maintenance readiness, supplier disruption, and workforce constraints.",
+    riskTypes: ["Throughput", "Quality", "Maintenance", "Supplier Flow", "Labor Coverage", "Launch Readiness"],
+    mapTitle: "Manufacturing Regional Risk",
+    mapSubtitle: "Regional pressure across plants, suppliers, and launch operations.",
+    items: [
+      "Final assembly takt miss", "Supplier sequencing volatility", "Warranty claim signal spike", "Paint booth maintenance backlog",
+      "Quality hold aging", "Layered process audit evidence gap", "Battery module scrap increase", "Line-side congestion",
+      "Tooling changeover delay", "Critical station labor shortage", "Launch part readiness gap", "Inbound premium freight surge",
+      "Rework loop concentration", "Engineering disposition backlog", "Supplier containment drift", "End-of-line test failures",
+      "Material kitting accuracy drop", "Maintenance overtime exposure", "Calibration evidence slippage", "Production schedule compression",
+      "Body shop downtime risk", "Customer campaign readiness", "Shift handoff variance", "Parts shortage escalation"
+    ]
+  },
+  "Construction & Infrastructure": {
+    audience: "VP, Program Delivery",
+    scope: "Capital projects, field execution, contractors",
+    summary: "Tracks schedule pressure, contractor coordination, inspection readiness, permit friction, and change-order exposure across active projects.",
+    riskTypes: ["Schedule", "Contractors", "Permits", "Inspections", "Change Orders", "Utility Coordination"],
+    mapTitle: "Construction Regional Risk",
+    mapSubtitle: "Regional pressure across projects, crews, permits, and inspections.",
+    items: [
+      "Critical path float erosion", "Permit dependency slippage", "Contractor change-order pressure", "Inspection readiness gap",
+      "Specialty crew coverage constraint", "Field rework narrative cluster", "Utility tie-in delay", "Procurement submittal aging",
+      "Concrete pour window compression", "Right-of-way access conflict", "Design response backlog", "Rail possession constraint",
+      "Traffic control approval delay", "Punch list growth", "Drainage package resequencing", "Commissioning evidence gap",
+      "Survey control discrepancy", "Material staging conflict", "Night work productivity drag", "Environmental hold point risk",
+      "Owner decision latency", "Temporary works review delay", "Subcontractor mobilization miss", "Schedule recovery plan drift"
+    ]
+  },
+  "Energy & Utilities": {
+    audience: "VP, Operations & Reliability",
+    scope: "Grid, field service, generation, compliance",
+    summary: "Prioritizes outage response, asset reliability, work-order aging, regulatory readiness, and customer-impact risk by operating area.",
+    riskTypes: ["Outage Response", "Asset Reliability", "Field Dispatch", "Regulatory", "Customer Impact", "Switching"],
+    mapTitle: "Energy Regional Risk",
+    mapSubtitle: "Regional pressure across grid assets, dispatch, customers, and compliance.",
+    items: [
+      "Outage response escalation surge", "Substation maintenance deferral", "Regulatory evidence gap", "Dispatch queue recovery",
+      "Customer impact narrative increase", "Switching workflow drift", "Transformer inspection backlog", "Vegetation work-order aging",
+      "Mutual-aid crew constraint", "Feeder reliability deterioration", "Critical spares exposure", "Relay testing schedule slip",
+      "Medical priority account miss", "Restoration estimate variance", "Generation derate pressure", "Storm staging readiness gap",
+      "Call center repeat contact rise", "Crew travel time expansion", "NERC evidence aging", "Underground fault queue",
+      "Meter exchange backlog", "Voltage complaint cluster", "Protection setting review delay", "Planned outage compression"
+    ]
+  },
+  "Aerospace & Shipbuilding": {
+    audience: "VP, Complex Programs",
+    scope: "Program delivery, yards, suppliers, certification",
+    summary: "Surfaces program slippage, nonconformance pressure, certification evidence gaps, and yard readiness across long-cycle builds.",
+    riskTypes: ["Program Milestones", "Nonconformance", "Certification", "Supplier Readiness", "Rework", "Yard Access"],
+    mapTitle: "Aerospace & Shipbuilding Regional Risk",
+    mapSubtitle: "Regional pressure across programs, yards, suppliers, and certification gates.",
+    items: [
+      "Certification package aging", "Nonconformance rework stack", "Build bay constraint", "Supplier readiness recovery",
+      "Engineering disposition queue", "Yard access conflict", "Dry dock sequencing delay", "Composite layup defect cluster",
+      "Weld inspection backlog", "Avionics integration slip", "Hull outfitting compression", "Flight test readiness gap",
+      "MRB decision latency", "Long-lead material shortage", "Customer acceptance evidence gap", "Critical drawing release delay",
+      "Trade stacking congestion", "Configuration control drift", "Sea trial issue queue", "Tool calibration slippage",
+      "Program milestone recovery risk", "Supplier first article miss", "Quality escape containment", "Certification lab capacity"
+    ]
+  },
+  "Logistics & Heavy Haul": {
+    audience: "VP, Logistics Operations",
+    scope: "Lane reliability, terminals, permits, fleet readiness",
+    summary: "Tracks lane disruption, heavy-haul permit readiness, terminal dwell, driver coverage, and high-value shipment exposure.",
+    riskTypes: ["Lane Reliability", "Terminal Dwell", "Fleet Readiness", "Permits", "Driver Coverage", "Chain of Custody"],
+    mapTitle: "Logistics Regional Risk",
+    mapSubtitle: "Regional pressure across terminals, lanes, permits, fleet, and driver coverage.",
+    items: [
+      "Oversize permit delay", "Terminal dwell escalation", "Fleet readiness backlog", "Driver coverage recovery",
+      "Chain-of-custody evidence gap", "Route exception language spike", "Escort availability constraint", "Bridge restriction reroute",
+      "Port appointment miss", "Rail interchange congestion", "High-value shipment hold", "Trailer maintenance aging",
+      "Fuel stop disruption", "Customs documentation drift", "Weather route exposure", "Crane unload window compression",
+      "Cross-dock labor gap", "Returnable asset shortage", "Expedite cost spike", "Dispatch handoff variance",
+      "Heavy-haul route survey delay", "Customer delivery promise risk", "Carrier compliance evidence gap", "Yard departure queue"
+    ]
+  },
+  "Forestry & Logging": {
+    audience: "VP, Resource Operations",
+    scope: "Harvest blocks, mills, access roads, contractors",
+    summary: "Combines harvest readiness, mill intake, road access, weather exposure, contractor coverage, and environmental compliance.",
+    riskTypes: ["Harvest Readiness", "Weather Access", "Equipment", "Mill Intake", "Contractor Coverage", "Environmental"],
+    mapTitle: "Forestry Regional Risk",
+    mapSubtitle: "Regional pressure across harvest blocks, roads, mills, contractors, and permits.",
+    items: [
+      "Weather access disruption", "Equipment availability drag", "Mill intake imbalance", "Contractor coverage recovery",
+      "Environmental permit evidence gap", "Field notes road concern", "Haul road soft spot cluster", "Remote block release delay",
+      "Harvester repair backlog", "Skidder utilization drop", "Stream buffer documentation gap", "Log deck overflow",
+      "Road matting shortage", "Fuel delivery constraint", "Crew travel exposure", "Fire condition monitoring gap",
+      "Mill species mix mismatch", "Contractor invoice aging", "Bridge load rating concern", "Reforestation handoff delay",
+      "Wet weather productivity drag", "Scaling ticket variance", "Access gate coordination miss", "Active stand closeout risk"
+    ]
+  }
+};
+
+export const scenarios = industries;
+export const signals = industries["Manufacturing & Automotive"].riskTypes;
 
 export const filters = {
   regions: ["All Regions", "West Region", "South Region", "Central Region", "North Region"],
-  divisions: ["All Divisions", "Manufacturing", "Logistics", "Maintenance", "Field Ops"],
-  timeRanges: ["Current Week", "Prior 7 Days", "4-Week Rolling", "Quarter to Date"],
+  divisions: Object.keys(industries),
+  timeRanges: ["Previous Week", "Previous Month", "Previous Quarter", "Previous Year"],
   impacts: ["All Impact", "High", "Medium", "Low"],
   reviewStates: ["All Review States", "Needs Review", "In Progress", "Assigned"]
 };
 
-export const patterns = [
-  {
-    id: 1,
-    pattern: "Escalation Response Breakdown",
-    region: "West Region",
-    division: "Manufacturing",
-    signal: "Escalations",
-    why: "Escalation volume is rising while closure rate is declining. Aging escalations over 7 days increased 31%.",
-    impact: "High",
-    review: "Needs Review",
-    score: 94,
-    trend: [42, 48, 46, 57, 63, 75, 68, 59, 71, 77],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 2,
-    pattern: "Corrective Action Backlog Risk",
-    region: "South Region",
-    division: "Maintenance",
-    signal: "Actions / CA",
-    why: "Corrective action backlog grew 23%. Overdue actions older than 30 days increased 27%.",
-    impact: "High",
-    review: "Needs Review",
-    score: 88,
-    trend: [36, 43, 41, 51, 64, 72, 66, 55, 62, 70],
-    direction: "up",
-    color: "#F97316"
-  },
-  {
-    id: 3,
-    pattern: "Compliance Instability",
-    region: "Central Region",
-    division: "Logistics",
-    signal: "Compliance",
-    why: "Compliance scores declined 6 points. High-risk workflow activity increased 14%.",
-    impact: "Medium",
-    review: "In Progress",
-    score: 77,
-    trend: [51, 55, 57, 61, 66, 60, 68, 56, 64, 78],
-    direction: "down",
-    color: "#F5B544"
-  },
-  {
-    id: 4,
-    pattern: "Assignment Bottleneck",
-    region: "All Regions",
-    division: "Field Ops",
-    signal: "Assignments",
-    why: "Assignments aging over 7 days increased 19%. Three users have more than 75 open assignments.",
-    impact: "Medium",
-    review: "Assigned",
-    score: 73,
-    trend: [46, 49, 53, 55, 58, 62, 57, 52, 61, 74],
-    direction: "up",
-    color: "#7C3AED"
-  },
-  {
-    id: 5,
-    pattern: "Operational Recovery",
-    region: "North Region",
-    division: "Manufacturing",
-    signal: "Actions / CA",
-    why: "Corrective actions closed increased 16%. Escalation closure rate improved 9%.",
-    impact: "Low",
-    review: "In Progress",
-    score: 42,
-    trend: [34, 38, 41, 39, 46, 54, 47, 52, 61, 67],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 6,
-    pattern: "Workflow Engagement Drop",
-    region: "Central Region",
-    division: "Logistics",
-    signal: "Workflows",
-    why: "Permit and observation workflow participation dropped below threshold at 6 monitored sites.",
-    impact: "High",
-    review: "Needs Review",
-    score: 86,
-    trend: [64, 59, 57, 51, 48, 44, 39, 42, 36, 34],
-    direction: "down",
-    color: "#1F6AE5"
-  },
-  {
-    id: 7,
-    pattern: "Open Text Fatigue Concern",
-    region: "West Region",
-    division: "Manufacturing",
-    signal: "Open Text",
-    why: "Free-text observations mention fatigue, overtime compression, and missed rest windows 24% more often than baseline.",
-    impact: "High",
-    review: "Needs Review",
-    score: 91,
-    trend: [38, 45, 52, 58, 61, 69, 73, 79, 82, 88],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 8,
-    pattern: "Supervisor Review Cadence Recovery",
-    region: "South Region",
-    division: "Maintenance",
-    signal: "Workflows",
-    why: "Supervisor review participation improved 18% after targeted huddles, reducing late intervention queue growth.",
-    impact: "Low",
-    review: "In Progress",
-    score: 39,
-    trend: [42, 45, 49, 52, 57, 61, 66, 70, 73, 78],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 9,
-    pattern: "Lockout Verification Language Spike",
-    region: "Central Region",
-    division: "Maintenance",
-    signal: "Open Text",
-    why: "Narratives show repeated uncertainty around lockout verification language in maintenance work orders.",
-    impact: "High",
-    review: "Needs Review",
-    score: 89,
-    trend: [41, 46, 54, 51, 63, 69, 75, 72, 83, 87],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 10,
-    pattern: "Training Completion Drift",
-    region: "North Region",
-    division: "Field Ops",
-    signal: "Assignments",
-    why: "Critical safety training assignments are aging past expected completion windows in two field teams.",
-    impact: "Medium",
-    review: "Assigned",
-    score: 74,
-    trend: [46, 50, 49, 55, 58, 63, 59, 67, 70, 74],
-    direction: "up",
-    color: "#7C3AED"
-  },
-  {
-    id: 11,
-    pattern: "Permit Participation Recovery",
-    region: "West Region",
-    division: "Logistics",
-    signal: "Compliance",
-    why: "Permit participation moved back above threshold at three logistics sites after targeted manager review.",
-    impact: "Low",
-    review: "In Progress",
-    score: 44,
-    trend: [31, 34, 39, 42, 48, 53, 58, 64, 70, 76],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 12,
-    pattern: "Repeat Hazard Narrative Cluster",
-    region: "South Region",
-    division: "Manufacturing",
-    signal: "Open Text",
-    why: "Operator comments repeatedly reference recurring pinch-point hazards around staging and material handoff.",
-    impact: "Medium",
-    review: "Needs Review",
-    score: 78,
-    trend: [44, 48, 52, 56, 53, 61, 66, 64, 70, 73],
-    direction: "up",
-    color: "#F5B544"
-  },
-  {
-    id: 13,
-    pattern: "Incident Review Closure Drag",
-    region: "Central Region",
-    division: "Field Ops",
-    signal: "Escalations",
-    why: "Incident review escalations are moving slower than baseline, with closure cycle time up 21%.",
-    impact: "High",
-    review: "Assigned",
-    score: 84,
-    trend: [50, 54, 58, 61, 67, 64, 72, 76, 74, 82],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 14,
-    pattern: "Corrective Action Quality Recovery",
-    region: "North Region",
-    division: "Maintenance",
-    signal: "Actions / CA",
-    why: "Reopened corrective actions decreased 13%, indicating stronger closure quality in maintenance follow-ups.",
-    impact: "Low",
-    review: "In Progress",
-    score: 36,
-    trend: [36, 39, 43, 48, 52, 57, 62, 68, 73, 80],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 15,
-    pattern: "Behavioral Frustration Signal",
-    region: "West Region",
-    division: "Field Ops",
-    signal: "Open Text",
-    why: "Open comments show rising frustration language tied to delayed approvals and repeated rework loops.",
-    impact: "Medium",
-    review: "Needs Review",
-    score: 81,
-    trend: [39, 44, 47, 55, 60, 58, 66, 71, 75, 82],
-    direction: "up",
-    color: "#F5B544"
-  },
-  {
-    id: 16,
-    pattern: "Observation Quality Improvement",
-    region: "Central Region",
-    division: "Logistics",
-    signal: "Workflows",
-    why: "Observation narratives became more specific, increasing actionable findings while reducing duplicate reviews.",
-    impact: "Low",
-    review: "In Progress",
-    score: 41,
-    trend: [33, 37, 42, 45, 51, 55, 60, 65, 69, 74],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 17,
-    pattern: "Near-Miss Narrative Increase",
-    region: "South Region",
-    division: "Logistics",
-    signal: "Open Text",
-    why: "Near-miss descriptions increased around forklift pedestrian separation and temporary aisle congestion.",
-    impact: "High",
-    review: "Needs Review",
-    score: 87,
-    trend: [38, 41, 47, 52, 59, 63, 70, 76, 79, 84],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 18,
-    pattern: "Inspection Assignment Recovery",
-    region: "West Region",
-    division: "Field Ops",
-    signal: "Assignments",
-    why: "Inspection assignment completion improved after field coordinators rebalanced weekly review ownership.",
-    impact: "Low",
-    review: "In Progress",
-    score: 38,
-    trend: [29, 33, 37, 42, 46, 53, 59, 65, 71, 77],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 19,
-    pattern: "Contractor Workflow Participation Risk",
-    region: "North Region",
-    division: "Field Ops",
-    signal: "Workflows",
-    why: "Contractor safety workflow participation fell below minimum expected cadence in two remote crews.",
-    impact: "Medium",
-    review: "Assigned",
-    score: 76,
-    trend: [50, 49, 45, 43, 41, 39, 36, 40, 38, 35],
-    direction: "down",
-    color: "#F5B544"
-  },
-  {
-    id: 20,
-    pattern: "Escalation Ownership Drift",
-    region: "West Region",
-    division: "Maintenance",
-    signal: "Escalations",
-    why: "Escalations are being reassigned more frequently, creating handoff delay and unclear accountability.",
-    impact: "High",
-    review: "Needs Review",
-    score: 90,
-    trend: [49, 52, 55, 59, 66, 68, 73, 77, 81, 86],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 21,
-    pattern: "Compliance Audit Recovery",
-    region: "South Region",
-    division: "Manufacturing",
-    signal: "Compliance",
-    why: "Weekly audit completion returned above baseline after leadership clarified site-level ownership.",
-    impact: "Low",
-    review: "In Progress",
-    score: 40,
-    trend: [30, 34, 39, 43, 49, 55, 61, 67, 72, 79],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 22,
-    pattern: "PPE Exception Cluster",
-    region: "Central Region",
-    division: "Manufacturing",
-    signal: "Compliance",
-    why: "PPE exception documentation increased in production cells with elevated staffing variability.",
-    impact: "Medium",
-    review: "Assigned",
-    score: 79,
-    trend: [45, 49, 52, 58, 61, 65, 62, 69, 73, 76],
-    direction: "up",
-    color: "#F5B544"
-  },
-  {
-    id: 23,
-    pattern: "Action Reopen Risk",
-    region: "Central Region",
-    division: "Maintenance",
-    signal: "Actions / CA",
-    why: "Corrective actions tied to guarding and access controls are reopening at a higher than expected rate.",
-    impact: "High",
-    review: "Needs Review",
-    score: 85,
-    trend: [42, 47, 53, 57, 64, 60, 69, 74, 79, 83],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 24,
-    pattern: "Observation Follow-Through Lag",
-    region: "North Region",
-    division: "Logistics",
-    signal: "Actions / CA",
-    why: "Observation-linked corrective actions are staying open longer than comparable inspection actions.",
-    impact: "Medium",
-    review: "Assigned",
-    score: 72,
-    trend: [44, 46, 49, 53, 57, 62, 59, 65, 68, 71],
-    direction: "up",
-    color: "#F5B544"
-  },
-  {
-    id: 25,
-    pattern: "Permit Review Backlog",
-    region: "West Region",
-    division: "Logistics",
-    signal: "Workflows",
-    why: "Permit review backlog increased after a short-cycle staffing shift in regional logistics operations.",
-    impact: "High",
-    review: "Needs Review",
-    score: 83,
-    trend: [48, 51, 55, 58, 62, 67, 71, 69, 75, 81],
-    direction: "up",
-    color: "#EF4444"
-  },
-  {
-    id: 26,
-    pattern: "Leadership Review Throughput Gain",
-    region: "South Region",
-    division: "Field Ops",
-    signal: "Escalations",
-    why: "Leadership review throughput improved after regional teams adopted a single daily escalation queue.",
-    impact: "Low",
-    review: "In Progress",
-    score: 37,
-    trend: [35, 38, 42, 45, 51, 56, 62, 68, 73, 80],
-    direction: "recovery",
-    color: "#16A34A"
-  },
-  {
-    id: 27,
-    pattern: "Weather-Related Hazard Mentions",
-    region: "North Region",
-    division: "Field Ops",
-    signal: "Open Text",
-    why: "Open text comments increasingly reference weather exposure, traction, and outdoor task sequencing.",
-    impact: "Medium",
-    review: "Needs Review",
-    score: 75,
-    trend: [40, 43, 47, 52, 56, 61, 58, 64, 70, 74],
-    direction: "up",
-    color: "#F5B544"
-  },
-  {
-    id: 28,
-    pattern: "Training Evidence Gap",
-    region: "South Region",
-    division: "Maintenance",
-    signal: "Assignments",
-    why: "Completed training records are missing supervisor acknowledgement in several high-risk work groups.",
-    impact: "Medium",
-    review: "Assigned",
-    score: 70,
-    trend: [43, 46, 50, 54, 59, 56, 63, 66, 69, 72],
-    direction: "up",
-    color: "#7C3AED"
-  }
-];
+const regions = ["West Region", "South Region", "Central Region", "North Region"];
+const reviews = ["Needs Review", "Assigned", "In Progress", "Needs Review"];
+const impacts = ["High", "High", "Medium", "Medium", "Low"];
+const trendShapes = {
+  up: [42, 47, 51, 56, 61, 66, 72, 76, 81, 86],
+  recovery: [46, 49, 54, 58, 62, 67, 71, 75, 78, 82],
+  mixed: [55, 58, 54, 62, 59, 66, 63, 70, 68, 74]
+};
+
+function whyFor(industry, item, riskType, region, direction) {
+  const pressure = direction === "recovery" ? "is improving but still needs ownership" : "is moving outside the expected operating band";
+  return `${item} in ${region} ${pressure}, with ${riskType.toLowerCase()} signals now above the industry baseline.`;
+}
+
+export const patterns = Object.entries(industries).flatMap(([division, config], industryIndex) =>
+  config.items.map((item, index) => {
+    const direction = index % 9 === 3 || index % 11 === 7 ? "recovery" : index % 5 === 2 ? "mixed" : "up";
+    const riskType = config.riskTypes[index % config.riskTypes.length];
+    const region = regions[(index + industryIndex) % regions.length];
+    const scoreBase = direction === "recovery" ? 42 : 72 + ((index * 5 + industryIndex * 3) % 23);
+    return {
+      id: industryIndex * 100 + index + 1,
+      pattern: item,
+      region,
+      division,
+      signal: riskType,
+      why: whyFor(division, item, riskType, region, direction),
+      impact: impacts[(index + industryIndex) % impacts.length],
+      review: reviews[(index + industryIndex) % reviews.length],
+      score: scoreBase,
+      trend: trendShapes[direction].map((value, point) => value + ((index + industryIndex + point) % 5) - 2),
+      direction,
+      color: direction === "recovery" ? "#16A34A" : index % 3 === 0 ? "#EF4444" : index % 3 === 1 ? "#F97316" : "#F5B544"
+    };
+  })
+);
