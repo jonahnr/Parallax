@@ -1,6 +1,6 @@
-# Worker Safety Intelligence Digest
+# Weekly Operational Intelligence Digest
 
-React + Vite prototype for a Parallax Data Lab worker-safety intelligence product. The app presents a weekly executive intelligence digest with dynamic slicers, leadership priorities, open-text concern detection, recovery signals, operational follow-up risks, and a sticky operational signal heatmap.
+React + Vite prototype for a Parallax Data Lab operational intelligence product. The app presents a weekly executive digest with dynamic industry slicers, leadership priorities, recovery signals, industry-specific risk item types, and a sticky operational signal heatmap.
 
 ## Stack
 
@@ -21,7 +21,8 @@ React + Vite prototype for a Parallax Data Lab worker-safety intelligence produc
 |-- tailwind.config.js
 |-- vite.config.js
 |-- assets/
-|   `-- parallax-logo.svg
+|   |-- parallax-logo.svg
+|   `-- social-preview.png
 `-- src/
     |-- main.js
     |-- styles.css
@@ -36,7 +37,7 @@ React + Vite prototype for a Parallax Data Lab worker-safety intelligence produc
 `src/` is the source of truth.
 
 - `src/main.js`: React components and app state
-- `src/data/digestData.js`: simulated operational safety intelligence data
+- `src/data/digestData.js`: simulated operational intelligence data for manufacturing and automotive, construction and infrastructure, energy and utilities, aerospace and shipbuilding, logistics and heavy haul, and forestry and logging industries
 - `src/lib/intelligence.js`: scoring, filtering, ranking, heatmap, and derived metric helpers
 - `src/styles.css`: Tailwind entry and global base styles
 
