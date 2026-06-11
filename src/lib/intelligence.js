@@ -38,16 +38,17 @@ export function comparedToLabel(timeRange) {
   const currentDay = today.getDay();
   const daysSinceMonday = (currentDay + 6) % 7;
   const currentWeekMonday = addDays(today, -daysSinceMonday);
-  const recentCompleteStart = addDays(currentWeekMonday, -7);
-  const reportingStart = addDays(currentWeekMonday, -14);
-  const reportingEnd = addDays(currentWeekMonday, -8);
+  const reportingStart = addDays(currentWeekMonday, -7);
+  const reportingEnd = addDays(currentWeekMonday, -1);
+  const priorStart = addDays(currentWeekMonday, -14);
+  const priorEnd = addDays(currentWeekMonday, -8);
   const formatRange = (start, end) => `${formatShortDate(start)} - ${formatShortDate(end)}`;
   return (
     {
-      "Previous Week": [formatRange(recentCompleteStart, addDays(currentWeekMonday, -1)), "Previous Week"],
-      "Previous Month": [formatRange(addDays(reportingEnd, -30), reportingEnd), "Previous Month Trend"],
-      "Previous Quarter": [formatRange(addDays(reportingEnd, -90), reportingEnd), "Previous Quarter Trend"],
-      "Previous Year": [formatRange(addDays(reportingEnd, -365), reportingEnd), "Previous Year Trend"]
+      "Previous Week": [formatRange(priorStart, priorEnd), "Prior Period"],
+      "Previous Month": [formatRange(addDays(reportingStart, -30), priorEnd), "Prior Month Trend"],
+      "Previous Quarter": [formatRange(addDays(reportingStart, -90), priorEnd), "Prior Quarter Trend"],
+      "Previous Year": [formatRange(addDays(reportingStart, -365), priorEnd), "Prior Year Trend"]
     }[timeRange] || ["Configured comparison", "Baseline"]
   );
 }
@@ -122,21 +123,8 @@ export function contextPatterns(slicers, options = {}) {
   return scopedRows(slicers, options);
 }
 
-export function activePatterns(slicers, sort) {
-  const rows = contextPatterns(slicers);
-  return [...rows].sort((a, b) => {
-    const aValue = sortValue(a, sort.key);
-    const bValue = sortValue(b, sort.key);
-    if (aValue === bValue) return b.score - a.score || a.pattern.localeCompare(b.pattern);
-    if (typeof aValue === "number" && typeof bValue === "number") return (aValue - bValue) * sort.dir;
-    return String(aValue).localeCompare(String(bValue)) * sort.dir;
-  });
-}
-
-function sortValue(item, key) {
-  if (key === "id") return item.score;
-  if (key === "action") return item.signal;
-  return item[key];
+export function activePatterns(slicers) {
+  return contextPatterns(slicers).sort((a, b) => b.score - a.score || a.pattern.localeCompare(b.pattern));
 }
 
 export function leadershipItems(slicers, exactRows, limit = 5) {
@@ -255,10 +243,10 @@ export function signalDirectionMetric(slicers, signal) {
 }
 
 export function heatLevel(value) {
-  if (value >= 84) return "bg-red-500/40 shadow-[0_0_24px_rgba(239,68,68,.2)]";
-  if (value >= 70) return "bg-orange-500/35";
+  if (value >= 84) return "bg-red-400/40 shadow-[0_0_24px_rgba(248,113,113,.2)]";
+  if (value >= 70) return "bg-orange-400/35";
   if (value >= 55) return "bg-parallax-gold/25";
-  return "bg-emerald-600/20";
+  return "bg-parallax-teal/25";
 }
 
 export function complianceScore(rows) {

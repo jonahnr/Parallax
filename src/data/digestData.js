@@ -6,14 +6,14 @@ const industries = {
     riskTypes: ["Throughput", "Quality", "Maintenance", "Supplier Flow", "Labor Coverage", "Launch Readiness"],
     mapTitle: "Manufacturing Regional Risk",
     mapSubtitle: "Regional pressure across plants, suppliers, and launch operations.",
-    items: [
-      "Final assembly takt miss", "Supplier sequencing volatility", "Warranty claim signal spike", "Paint booth maintenance backlog",
-      "Quality hold aging", "Layered process audit evidence gap", "Battery module scrap increase", "Line-side congestion",
-      "Tooling changeover delay", "Critical station labor shortage", "Launch part readiness gap", "Inbound premium freight surge",
-      "Rework loop concentration", "Engineering disposition backlog", "Supplier containment drift", "End-of-line test failures",
-      "Material kitting accuracy drop", "Maintenance overtime exposure", "Calibration evidence slippage", "Production schedule compression",
-      "Body shop downtime risk", "Customer campaign readiness", "Shift handoff variance", "Parts shortage escalation"
-    ]
+    itemGroups: {
+      Throughput: ["Final assembly takt miss", "Bottleneck station cycle-time drift", "Constraint line downtime carryover", "Production schedule compression", "End-of-line test queue buildup"],
+      Quality: ["Quality hold aging", "Layered process audit evidence gap", "Warranty claim signal spike", "Supplier containment drift", "Engineering disposition backlog"],
+      Maintenance: ["Paint booth maintenance backlog", "Critical asset PM deferral", "Tooling changeover delay", "Calibration evidence slippage", "Body shop downtime risk"],
+      "Supplier Flow": ["Supplier sequencing volatility", "Inbound premium freight surge", "Parts shortage escalation", "Line-side material kitting miss", "Supplier ASN accuracy drop"],
+      "Labor Coverage": ["Critical station labor shortage", "Shift handoff variance", "Maintenance overtime exposure", "Absenteeism coverage gap", "Supervisor span-of-control pressure"],
+      "Launch Readiness": ["Launch part readiness gap", "Customer campaign readiness", "Pilot build defect recurrence", "Process validation evidence gap", "New model ramp containment risk"]
+    }
   },
   "Construction & Infrastructure": {
     audience: "VP, Program Delivery",
@@ -22,14 +22,14 @@ const industries = {
     riskTypes: ["Schedule", "Contractors", "Permits", "Inspections", "Change Orders", "Utility Coordination"],
     mapTitle: "Construction Regional Risk",
     mapSubtitle: "Regional pressure across projects, crews, permits, and inspections.",
-    items: [
-      "Critical path float erosion", "Permit dependency slippage", "Contractor change-order pressure", "Inspection readiness gap",
-      "Specialty crew coverage constraint", "Field rework narrative cluster", "Utility tie-in delay", "Procurement submittal aging",
-      "Concrete pour window compression", "Right-of-way access conflict", "Design response backlog", "Rail possession constraint",
-      "Traffic control approval delay", "Punch list growth", "Drainage package resequencing", "Commissioning evidence gap",
-      "Survey control discrepancy", "Material staging conflict", "Night work productivity drag", "Environmental hold point risk",
-      "Owner decision latency", "Temporary works review delay", "Subcontractor mobilization miss", "Schedule recovery plan drift"
-    ]
+    itemGroups: {
+      Schedule: ["Critical path float erosion", "Schedule recovery plan drift", "Concrete pour window compression", "Commissioning sequence compression", "Long-lead procurement slip"],
+      Contractors: ["Specialty crew coverage constraint", "Subcontractor mobilization miss", "Night work productivity drag", "Temporary works review delay", "Site supervision coverage gap"],
+      Permits: ["Permit dependency slippage", "Right-of-way access conflict", "Traffic control approval delay", "Environmental hold point risk", "Lane closure permit aging"],
+      Inspections: ["Inspection readiness gap", "Punch list growth", "Survey control discrepancy", "Commissioning evidence gap", "Quality witness point miss"],
+      "Change Orders": ["Contractor change-order pressure", "Design response backlog", "Owner decision latency", "Field rework narrative cluster", "Scope clarification backlog"],
+      "Utility Coordination": ["Utility tie-in delay", "Rail possession constraint", "Drainage package resequencing", "Material staging conflict", "Third-party outage window miss"]
+    }
   },
   "Energy & Utilities": {
     audience: "VP, Operations & Reliability",
@@ -38,14 +38,14 @@ const industries = {
     riskTypes: ["Outage Response", "Asset Reliability", "Field Dispatch", "Regulatory", "Customer Impact", "Switching"],
     mapTitle: "Energy Regional Risk",
     mapSubtitle: "Regional pressure across grid assets, dispatch, customers, and compliance.",
-    items: [
-      "Outage response escalation surge", "Substation maintenance deferral", "Regulatory evidence gap", "Dispatch queue recovery",
-      "Customer impact narrative increase", "Switching workflow drift", "Transformer inspection backlog", "Vegetation work-order aging",
-      "Mutual-aid crew constraint", "Feeder reliability deterioration", "Critical spares exposure", "Relay testing schedule slip",
-      "Medical priority account miss", "Restoration estimate variance", "Generation derate pressure", "Storm staging readiness gap",
-      "Call center repeat contact rise", "Crew travel time expansion", "NERC evidence aging", "Underground fault queue",
-      "Meter exchange backlog", "Voltage complaint cluster", "Protection setting review delay", "Planned outage compression"
-    ]
+    itemGroups: {
+      "Outage Response": ["Outage response escalation surge", "Storm staging readiness gap", "Restoration estimate variance", "Mutual-aid crew constraint", "Critical restoration handoff miss"],
+      "Asset Reliability": ["Substation maintenance deferral", "Transformer inspection backlog", "Feeder reliability deterioration", "Critical spares exposure", "Underground fault queue"],
+      "Field Dispatch": ["Dispatch queue recovery", "Crew travel time expansion", "Vegetation work-order aging", "Meter exchange backlog", "Field appointment backlog"],
+      Regulatory: ["Regulatory evidence gap", "NERC evidence aging", "Relay testing schedule slip", "Protection setting review delay", "Compliance exception closure aging"],
+      "Customer Impact": ["Customer impact narrative increase", "Medical priority account miss", "Call center repeat contact rise", "Voltage complaint cluster", "Estimated bill complaint cluster"],
+      Switching: ["Switching workflow drift", "Planned outage compression", "Clearance tagging variance", "Switching order approval delay", "Control room procedure miss"]
+    }
   },
   "Aerospace & Shipbuilding": {
     audience: "VP, Complex Programs",
@@ -54,30 +54,30 @@ const industries = {
     riskTypes: ["Program Milestones", "Nonconformance", "Certification", "Supplier Readiness", "Rework", "Yard Access"],
     mapTitle: "Aerospace & Shipbuilding Regional Risk",
     mapSubtitle: "Regional pressure across programs, yards, suppliers, and certification gates.",
-    items: [
-      "Certification package aging", "Nonconformance rework stack", "Build bay constraint", "Supplier readiness recovery",
-      "Engineering disposition queue", "Yard access conflict", "Dry dock sequencing delay", "Composite layup defect cluster",
-      "Weld inspection backlog", "Avionics integration slip", "Hull outfitting compression", "Flight test readiness gap",
-      "MRB decision latency", "Long-lead material shortage", "Customer acceptance evidence gap", "Critical drawing release delay",
-      "Trade stacking congestion", "Configuration control drift", "Sea trial issue queue", "Tool calibration slippage",
-      "Program milestone recovery risk", "Supplier first article miss", "Quality escape containment", "Certification lab capacity"
-    ]
+    itemGroups: {
+      "Program Milestones": ["Program milestone recovery risk", "Critical drawing release delay", "Build bay constraint", "Flight test readiness gap", "Sea trial readiness slip"],
+      Nonconformance: ["Nonconformance rework stack", "Engineering disposition queue", "MRB decision latency", "Quality escape containment", "Weld inspection backlog"],
+      Certification: ["Certification package aging", "Customer acceptance evidence gap", "Certification lab capacity", "Conformity inspection delay", "Test article documentation gap"],
+      "Supplier Readiness": ["Supplier readiness recovery", "Supplier first article miss", "Long-lead material shortage", "Avionics integration slip", "Vendor qualification evidence gap"],
+      Rework: ["Trade stacking congestion", "Composite layup defect cluster", "Hull outfitting compression", "Rework labor queue saturation", "Out-of-station work transfer risk"],
+      "Yard Access": ["Yard access conflict", "Dry dock sequencing delay", "Tool calibration slippage", "Dockside equipment availability gap", "Restricted area escort coverage"]
+    }
   },
   "Logistics & Heavy Haul": {
     audience: "VP, Logistics Operations",
     scope: "Lane reliability, terminals, permits, fleet readiness",
-    summary: "Tracks lane disruption, heavy-haul permit readiness, terminal dwell, driver coverage, and high-value shipment exposure.",
+    summary: "Highlights what deserves leadership attention across lanes, terminals, permits, fleet readiness, driver coverage, and shipment control.",
     riskTypes: ["Lane Reliability", "Terminal Dwell", "Fleet Readiness", "Permits", "Driver Coverage", "Chain of Custody"],
     mapTitle: "Logistics Regional Risk",
     mapSubtitle: "Regional pressure across terminals, lanes, permits, fleet, and driver coverage.",
-    items: [
-      "Oversize permit delay", "Terminal dwell escalation", "Fleet readiness backlog", "Driver coverage recovery",
-      "Chain-of-custody evidence gap", "Route exception language spike", "Escort availability constraint", "Bridge restriction reroute",
-      "Port appointment miss", "Rail interchange congestion", "High-value shipment hold", "Trailer maintenance aging",
-      "Fuel stop disruption", "Customs documentation drift", "Weather route exposure", "Crane unload window compression",
-      "Cross-dock labor gap", "Returnable asset shortage", "Expedite cost spike", "Dispatch handoff variance",
-      "Heavy-haul route survey delay", "Customer delivery promise risk", "Carrier compliance evidence gap", "Yard departure queue"
-    ]
+    itemGroups: {
+      "Lane Reliability": ["Bridge restriction reroute", "Weather route exposure", "Customer delivery promise risk", "Route exception language spike", "Border crossing delay cluster"],
+      "Terminal Dwell": ["Terminal dwell escalation", "Port appointment miss", "Rail interchange congestion", "Yard departure queue", "Cross-dock labor gap"],
+      "Fleet Readiness": ["Fleet readiness backlog", "Trailer maintenance aging", "Returnable asset shortage", "Crane unload window compression", "Specialized trailer availability gap"],
+      Permits: ["Oversize permit delay", "Escort availability constraint", "Heavy-haul route survey delay", "Jurisdiction permit packet aging", "Pilot car schedule conflict"],
+      "Driver Coverage": ["Driver coverage recovery", "Dispatch handoff variance", "Fuel stop disruption", "Hours-of-service reset exposure", "Qualified operator coverage gap"],
+      "Chain of Custody": ["Chain-of-custody evidence gap", "High-value shipment hold", "Customs documentation drift", "Carrier compliance evidence gap", "Seal exception documentation miss"]
+    }
   },
   "Forestry & Logging": {
     audience: "VP, Resource Operations",
@@ -86,14 +86,14 @@ const industries = {
     riskTypes: ["Harvest Readiness", "Weather Access", "Equipment", "Mill Intake", "Contractor Coverage", "Environmental"],
     mapTitle: "Forestry Regional Risk",
     mapSubtitle: "Regional pressure across harvest blocks, roads, mills, contractors, and permits.",
-    items: [
-      "Weather access disruption", "Equipment availability drag", "Mill intake imbalance", "Contractor coverage recovery",
-      "Environmental permit evidence gap", "Field notes road concern", "Haul road soft spot cluster", "Remote block release delay",
-      "Harvester repair backlog", "Skidder utilization drop", "Stream buffer documentation gap", "Log deck overflow",
-      "Road matting shortage", "Fuel delivery constraint", "Crew travel exposure", "Fire condition monitoring gap",
-      "Mill species mix mismatch", "Contractor invoice aging", "Bridge load rating concern", "Reforestation handoff delay",
-      "Wet weather productivity drag", "Scaling ticket variance", "Access gate coordination miss", "Active stand closeout risk"
-    ]
+    itemGroups: {
+      "Harvest Readiness": ["Remote block release delay", "Active stand closeout risk", "Crew travel exposure", "Harvest plan variance", "Cut block sequencing miss"],
+      "Weather Access": ["Weather access disruption", "Haul road soft spot cluster", "Road matting shortage", "Wet weather productivity drag", "Bridge load rating concern"],
+      Equipment: ["Equipment availability drag", "Harvester repair backlog", "Skidder utilization drop", "Fuel delivery constraint", "Loader uptime deterioration"],
+      "Mill Intake": ["Mill intake imbalance", "Log deck overflow", "Mill species mix mismatch", "Scaling ticket variance", "Chip truck queue expansion"],
+      "Contractor Coverage": ["Contractor coverage recovery", "Contractor invoice aging", "Access gate coordination miss", "Haul contractor capacity gap", "Crew onboarding evidence gap"],
+      Environmental: ["Environmental permit evidence gap", "Stream buffer documentation gap", "Fire condition monitoring gap", "Reforestation handoff delay", "Erosion control inspection miss"]
+    }
   }
 };
 
@@ -122,10 +122,13 @@ function whyFor(industry, item, riskType, region, direction) {
   return `${item} in ${region} ${pressure}, with ${riskType.toLowerCase()} signals now above the industry baseline.`;
 }
 
+function itemEntries(config) {
+  return config.riskTypes.flatMap((riskType) => config.itemGroups[riskType].map((item) => ({ item, riskType })));
+}
+
 export const patterns = Object.entries(industries).flatMap(([division, config], industryIndex) =>
-  config.items.map((item, index) => {
+  itemEntries(config).map(({ item, riskType }, index) => {
     const direction = index % 9 === 3 || index % 11 === 7 ? "recovery" : index % 5 === 2 ? "mixed" : "up";
-    const riskType = config.riskTypes[index % config.riskTypes.length];
     const region = regions[(index + industryIndex) % regions.length];
     const scoreBase = direction === "recovery" ? 42 : 72 + ((index * 5 + industryIndex * 3) % 23);
     return {
