@@ -1,24 +1,602 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weekly Operational Intelligence Digest | Parallax Data Lab</title>
-  </head>
-  <body>
-    <main id="root">
-      <div style="min-height:100vh;background:#071033;color:#fff;font-family:Inter,system-ui,sans-serif;display:grid;place-items:center;padding:32px;">
-        <div style="max-width:720px;border:1px solid rgba(255,255,255,.16);border-radius:8px;background:rgba(13,31,83,.72);padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.32);">
-          <h1 style="margin:0 0 12px;font-size:28px;">Weekly Operational Intelligence Digest</h1>
-          <p style="margin:0 0 10px;color:#AEBCE0;line-height:1.5;">
-            Loading the React prototype. If this message stays visible, the site is being opened from the Vite source files instead of a built deployment.
-          </p>
-          <p style="margin:0;color:#F5B544;line-height:1.5;">
-            Run <strong>npm install</strong> and <strong>npm run build</strong>, then deploy the generated <strong>dist/</strong> folder, or use the included GitHub Pages Actions workflow.
-          </p>
-        </div>
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Parallax Data Lab | Business Intelligence Consulting</title>
+<meta name="description" content="Business intelligence and data analytics consulting for teams that need clearer dashboards, better reporting, and trusted KPI visibility."/>
+<link rel="canonical" href="https://parallaxdatalab.com/"/>
+<link href="home.css?v=186" rel="stylesheet"/>
+<meta name="theme-color" content="#0b1745"/>
+<link rel="icon" href="favicon.ico" sizes="any"/>
+<link rel="icon" type="image/png" href="favicon.png"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/><meta content="website" property="og:type"/>
+<meta content="Parallax Data Lab" property="og:site_name"/>
+<meta property="og:title" content="Parallax Data Lab | Business Intelligence Consulting"/>
+<meta property="og:description" content="Business intelligence and data analytics consulting for teams that need clearer dashboards, better reporting, and trusted KPI visibility."/>
+<meta property="og:url" content="https://parallaxdatalab.com/"/>
+<meta property="og:image" content="https://parallaxdatalab.com/assets/social/home-social.jpg"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Parallax Data Lab | Business Intelligence Consulting"/>
+<meta name="twitter:description" content="Business intelligence and data analytics consulting for teams that need clearer dashboards, better reporting, and trusted KPI visibility."/>
+<meta name="twitter:image" content="https://parallaxdatalab.com/assets/social/home-social.jpg"/>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": [
+    "LocalBusiness",
+    "ProfessionalService"
+  ],
+  "name": "Parallax Data Lab",
+  "url": "https://parallaxdatalab.com/",
+  "description": "Business intelligence consulting for clearer dashboards, trusted KPIs, and decision-ready reporting.",
+  "founder": {
+    "@type": "Person",
+    "name": "Jonah Robinson"
+  },
+  "areaServed": [
+    {
+      "@type": "City",
+      "name": "Cincinnati"
+    },
+    {
+      "@type": "State",
+      "name": "Ohio"
+    },
+    {
+      "@type": "Country",
+      "name": "United States"
+    }
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Cincinnati",
+    "addressRegion": "OH",
+    "addressCountry": "US"
+  },
+  "knowsAbout": [
+    "Power BI and Microsoft Fabric consulting",
+    "Business intelligence consulting",
+    "Data analytics consulting",
+    "KPI strategy and executive reporting",
+    "Reporting automation",
+    "Data quality review",
+    "Dashboard trust",
+    "BI governance"
+  ],
+  "sameAs": [
+    "https://www.linkedin.com/company/129543938/admin/dashboard/",
+    "https://www.youtube.com/@ParallaxDataLab",
+    "https://www.instagram.com/parallaxdatalab/",
+    "https://x.com/parallaxdatalab"
+  ]
+}</script>
+
+
+
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GK9PM083W7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-GK9PM083W7');
+</script>
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "xbq2h65cll");
+</script>
+</head>
+<body>
+<canvas aria-hidden="true" id="constellation"></canvas>
+<header aria-label="Parallax site navigation" class="site-header">
+<a aria-label="Parallax Data Lab home" class="site-brand" href="index.html"><img alt="Parallax Data Lab logo" src="assets/parallax_data_lab_original_transparent.png" decoding="async"></a>
+<button aria-controls="primary-navigation" aria-expanded="false" aria-label="Toggle navigation" class="mobile-nav-toggle" type="button"><span></span><span></span><span></span><em>Menu</em></button>
+<nav id="primary-navigation" aria-label="Primary navigation">
+<a href="index.html">Home</a>
+<div class="nav-dropdown nav-dropdown-offerings nav-dropdown-wide">
+<a class="nav-dropdown-toggle" href="our-offerings.html">Our Offerings</a>
+<div aria-label="Offerings and expertise sections" class="nav-dropdown-menu nav-menu-hierarchy nav-menu-offerings">
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Core engagement paths</summary>
+<a class="nav-menu-parent" href="our-offerings.html"><span>Offerings Overview</span></a>
+<a class="nav-menu-child nav-menu-scorecard nav-menu-path-00" href="dashboard-trust-scorecard.html"><span>Diagnostic Scorecard</span><em>Optional</em></a>
+<a class="nav-menu-child nav-menu-fit-check nav-menu-path-01" href="free-fit-check.html"><span>Free Fit Check</span><em>Free</em></a>
+<a class="nav-menu-child nav-menu-path-02" href="analytics-health-check.html"><span>Analytics Health Check</span></a>
+<a class="nav-menu-child nav-menu-path-03" href="decision-system-reset.html"><span>Decision System Reset</span></a>
+<a class="nav-menu-child nav-menu-path-04" href="fractional-analytics.html"><span>Fractional Analytics</span></a>
+</details>
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Expertise by problem</summary>
+<a class="nav-menu-parent" href="expertise.html"><span>Expertise Overview</span></a>
+<a class="nav-menu-child" href="power-bi-consultant-cincinnati.html"><span>Power BI & Microsoft Fabric</span></a>
+<a class="nav-menu-child" href="kpi-reporting-consulting.html"><span>KPI Strategy &amp; Executive Reporting</span></a>
+<a class="nav-menu-child" href="reporting-automation-consulting.html"><span>Reporting Automation</span></a>
+<a class="nav-menu-child" href="data-quality-analytics-reliability.html"><span>Data Quality &amp; Analytics Reliability</span></a>
+<a class="nav-menu-child" href="dashboard-trust-governance.html"><span>BI Governance &amp; Dashboard Trust</span></a>
+<a class="nav-menu-child" href="data-integration-analytics-architecture.html"><span>Data Integration &amp; Analytics Architecture</span></a>
+</details>
+</div>
+</div>
+<div class="nav-dropdown nav-dropdown-intelligence">
+<a class="nav-dropdown-toggle" href="intelligence-lab.html">Intelligence Lab</a>
+<div aria-label="Intelligence Lab services" class="nav-dropdown-menu nav-dropdown-menu-intelligence nav-menu-hierarchy">
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Intelligence Lab</summary>
+<a class="nav-menu-parent" href="intelligence-lab.html"><span>Intelligence Lab Overview</span></a>
+<a class="nav-menu-child" href="decision-workspace.html"><span>Interactive Decision Workspace Demo</span></a>
+</details>
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Lab initiatives</summary>
+<a class="nav-menu-child" href="intelligence-lab.html#operations-intelligence-digest"><span>Operations Intelligence Digest</span></a>
+<a class="nav-menu-child" href="intelligence-lab.html#governance-rls-architecture"><span>Governance &amp; RLS Architecture</span></a>
+<a class="nav-menu-child" href="intelligence-lab.html#enterprise-outcome-studio"><span>Enterprise Outcome Studio</span></a>
+<a class="nav-menu-child" href="intelligence-lab.html#predictive-risk-intelligence"><span>Predictive Risk Intelligence</span></a>
+</details>
+</div>
+</div>
+<div class="nav-dropdown nav-dropdown-case-studies">
+<a class="nav-dropdown-toggle" href="case-studies.html">Case Studies</a>
+<div aria-label="Case studies by industry" class="nav-dropdown-menu nav-menu-hierarchy nav-dropdown-menu-case-studies">
+<a class="nav-menu-parent" href="case-studies.html"><span>Case Studies Overview</span></a>
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Industrial operations</summary>
+<a class="nav-menu-child" href="case-studies.html#manufacturing-throughput"><span>Manufacturing</span></a>
+<a class="nav-menu-child" href="case-studies.html#utilities-reliability"><span>Utilities</span></a>
+<a class="nav-menu-child" href="case-studies.html#energy-operations"><span>Energy</span></a>
+<a class="nav-menu-child" href="case-studies.html#construction-project-controls"><span>Construction</span></a>
+</details>
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Distributed operations</summary>
+<a class="nav-menu-child" href="case-studies.html#logistics-service-level"><span>Logistics & Transportation</span></a>
+<a class="nav-menu-child" href="case-studies.html#field-services-kpis"><span>Field Services</span></a>
+<a class="nav-menu-child" href="case-studies.html#retail-multi-location"><span>Retail & Multi-Location</span></a>
+<a class="nav-menu-child" href="case-studies.html#facilities-maintenance"><span>Facilities & Maintenance</span></a>
+</details>
+<details class="nav-menu-group">
+<summary class="nav-menu-section-title">Commercial and supply chain</summary>
+<a class="nav-menu-child" href="case-studies.html#healthcare-utilization"><span>Healthcare Operations</span></a>
+<a class="nav-menu-child" href="case-studies.html#industrial-software-revenue"><span>Industrial Software</span></a>
+<a class="nav-menu-child" href="case-studies.html#b2b-services-scorecard"><span>B2B Services</span></a>
+<a class="nav-menu-child" href="case-studies.html#distribution-supply-chain"><span>Distribution & Supply Chain</span></a>
+</details>
+</div>
+</div>
+<a href="insights.html">Insights</a>
+<div class="nav-dropdown nav-dropdown-about">
+<a class="nav-dropdown-toggle" href="about.html">About</a>
+<div aria-label="About Parallax Data Lab" class="nav-dropdown-menu nav-menu-hierarchy nav-dropdown-menu-about">
+<span class="nav-menu-section-title nav-menu-static-title">About</span>
+<a class="nav-menu-parent" href="about.html"><span>About Parallax</span></a>
+<a class="nav-menu-child" href="contact.html"><span>Contact</span></a>
+<a class="nav-menu-child" href="business-intelligence-consultant-cincinnati.html"><span>Local Analytics Consulting</span></a>
+</div>
+</div>
+</nav>
+</header>
+<main class="home-page">
+<section class="hero-section" id="top">
+<a aria-label="Parallax Data Lab home" class="hero-brand motion-layer" data-depth="0.08" href="index.html">
+<img alt="Parallax Data Lab logo" class="hero-logo" src="assets/parallax_data_lab_original_transparent.png" decoding="async">
+</a>
+<div aria-hidden="true" class="hero-rule"></div>
+<div class="hero-copy motion-layer" data-depth="-0.05">
+<h1>Business intelligence consulting for teams that no longer trust their reporting.</h1>
+<p>Parallax helps growing teams consolidate dashboards, automate recurring reports, define reliable KPIs, and build executive reporting systems people can actually use.</p>
+<div class="hero-fit-check hero-fit-check-compact" aria-label="Free Fit Check invitation">
+<div class="hero-fit-check-copy">
+<span class="hero-fit-check-label">Free 15-minute reporting consult</span>
+<strong>Find out what is actually breaking trust and what to fix first.</strong>
+<p>Bring one dashboard, KPI, or reporting bottleneck. Leave with a practical recommendation and no sales-pressure maze.</p>
+</div>
+<div class="hero-actions">
+<a class="primary-action" href="free-fit-check.html">Get My Free Fit Check</a>
+<a class="hero-text-link" href="free-fit-check.html#what-you-get">See What You&rsquo;ll Get</a>
+</div>
+</div>
+</div>
+</section>
+<section class="engagement-proof-strip" aria-label="Example engagement outcomes">
+<p class="page-kicker">Example engagement outcomes</p>
+<div class="engagement-proof-grid">
+<article><strong>14 reports</strong><span>to 4 executive views</span></article>
+<article><strong>5 KPIs</strong><span>to 5 accountable owners</span></article>
+<article><strong>6 systems</strong><span>to 1 governed data path</span></article>
+</div>
+</section>
+<div class="hero-expertise-nav reporting-needs-section" aria-label="Explore expertise by reporting need">
+<span class="hero-expertise-label">Explore by Reporting Need</span>
+<div class="hero-expertise-links">
+<a href="power-bi-consultant-cincinnati.html"><strong>Power BI</strong><small>Build or repair dashboards</small></a>
+<a href="kpi-reporting-consulting.html"><strong>KPI Strategy</strong><small>Build executive reporting that drives action</small></a>
+<a href="reporting-automation-consulting.html"><strong>Reporting Automation</strong><small>Remove recurring manual work</small></a>
+<a href="data-quality-analytics-reliability.html"><strong>Analytics Reliability</strong><small>Trace and resolve conflicting numbers</small></a>
+<a href="dashboard-trust-governance.html"><strong>BI Governance</strong><small>Clarify ownership, access, and trust</small></a>
+<a href="data-integration-analytics-architecture.html"><strong>Analytics Architecture</strong><small>Connect sources and build for scale</small></a>
+</div>
+</div>
+<section class="share-link-panel share-link-compact" aria-label="Share this page">
+<span class="share-link-label">Share</span>
+<a class="share-link-social" href="https://www.linkedin.com/sharing/share-offsite/?url=https://parallaxdatalab.com/" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn"></a>
+<a class="share-link-social" href="https://x.com/intent/post?text=Parallax%20Data%20Lab%20%7C%20Business%20Intelligence%20Consulting%20https%3A%2F%2Fparallaxdatalab.com%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on X"></a>
+<a class="share-link-social" href="mailto:?subject=Parallax%20Data%20Lab%20%7C%20Business%20Intelligence%20Consulting&amp;body=https://parallaxdatalab.com/" aria-label="Share by email"></a>
+<button class="share-link-social share-native-button" type="button" data-native-share="https://parallaxdatalab.com/" aria-label="Share this page"></button>
+</section>
+<section class="diagnostic-section reveal-card">
+<h2>Dashboard Trust Breaks Beneath The Surface</h2>
+<div class="diagnostic-panel">
+<article>
+<div>
+<h3>Reports multiply faster than ownership.</h3>
+<p>Each report solves a local need, but definitions, logic, and ownership drift unless the foundation is governed.</p>
+</div>
+<img alt="Abstract analytics network expanding without a clear owner" class="diagnostic-image" src="assets/home-generated/diagnostic-owner-drift.webp" loading="lazy" decoding="async">
+</article>
+<article>
+<div>
+<h3>The fix is structural, not cosmetic.</h3>
+<p>Shared definitions, reusable logic, and clear owners turn dashboards back into decision tools.</p>
+</div>
+<img alt="Balanced analytics structure connecting dashboards and decisions" class="diagnostic-image" src="assets/home-generated/diagnostic-structural-balance.webp" loading="lazy" decoding="async">
+</article>
+</div>
+</section>
+<section aria-label="Analytics foundation problems and solutions" class="symptom-section reveal-card">
+<div class="symptom-heading">
+<p>Trust Breaks &gt; Fix The System</p>
+<h2>The Breakpoints We Diagnose</h2>
+</div>
+<div aria-label="Problem card navigation" class="section-controls symptom-controls">
+<button aria-label="Show previous problem set" data-carousel-prev="symptom" type="button">Prev</button>
+<span data-carousel-status="symptom">1 / 2</span>
+<button aria-label="Show next problem set" data-carousel-next="symptom" type="button">Next</button>
+</div>
+<article class="symptom-card" data-carousel-item="symptom" data-page="0">
+<img alt="Business logic duplicated across analytics systems" class="symptom-image" src="assets/home-generated/symptom-business-logic-everywhere.webp" loading="lazy" decoding="async">
+<div class="symptom-copy">
+<h3>Business logic lives everywhere</h3>
+<p>Core calculations are copied across dashboards, spreadsheets, and ad-hoc queries.</p>
+<a href="insights/single-source-of-truth-myth.html">Read: Why a single source of truth fails</a>
+</div>
+</article>
+<article class="symptom-card" data-carousel-item="symptom" data-page="0">
+<img alt="Shared metric meaning organized across teams" class="symptom-image" src="assets/home-generated/symptom-metrics-shared-meaning.webp" loading="lazy" decoding="async">
+<div class="symptom-copy">
+<h3>Metrics lack shared meaning</h3>
+<p>The same KPI means different things depending on who built the report.</p>
+<a href="insights/kpi-ownership-framework-every-leadership-team-needs.html">Read: The KPI ownership framework</a>
+</div>
+</article>
+<article class="symptom-card" data-carousel-item="symptom" data-page="0">
+<img alt="Reports disconnected from leadership questions" class="symptom-image" src="assets/home-generated/symptom-reports-wrong-questions.webp" loading="lazy" decoding="async">
+<div class="symptom-copy">
+<h3>Reports answer wrong questions</h3>
+<p>Reports look polished, but miss the decisions leaders actually need to make.</p>
+<a href="decision-system-reset.html">See: The Decision System Reset approach</a>
+</div>
+</article>
+<article class="symptom-card" data-carousel-item="symptom" data-page="1">
+<img alt="Analytics confidence gauge surrounded by dashboards" class="symptom-image" src="assets/home-generated/symptom-confidence-erodes.webp" loading="lazy" decoding="async">
+<div class="symptom-copy">
+<h3>Confidence erodes silently</h3>
+<p>Meetings turn into number debates instead of action.</p>
+<a href="insights/why-nobody-trusts-your-dashboard.html">Read: Why nobody trusts the dashboard</a>
+</div>
+</article>
+<article class="symptom-card" data-carousel-item="symptom" data-page="1">
+<img alt="Analytics systems under pressure as the business scales" class="symptom-image" src="assets/home-generated/symptom-systems-scale.webp" loading="lazy" decoding="async">
+<div class="symptom-copy">
+<h3>Systems don't scale with the business</h3>
+<p>As teams grow, every change gets slower because the foundation is unclear.</p>
+<a href="data-integration-analytics-architecture.html">Explore: Architecture built for scale</a>
+</div>
+</article>
+<article class="symptom-card" data-carousel-item="symptom" data-page="1">
+<img alt="Decisions slowing as data and reports multiply" class="symptom-image" src="assets/home-generated/symptom-decisions-slow.webp" loading="lazy" decoding="async">
+<div class="symptom-copy">
+<h3>Decisions slow down as data grows</h3>
+<p>As reports multiply, simple questions take longer and teams default back to instinct.</p>
+<a href="insights/the-difference-between-reporting-and-decision-making.html">Read: Reporting vs. decision-making</a>
+</div>
+</article>
+</section>
+<section class="work-section">
+<div class="work-shell reveal-card">
+<div class="work-heading">
+<p class="page-kicker">Built around your business</p>
+<h2>Different teams arrive with different pieces missing.</h2>
+<p>Some need KPI strategy. Others need reliable pipelines, fewer dashboards, stronger governance, or automation. Parallax connects the pieces and builds the smallest strategy that makes sense for the business.</p>
+</div>
+<div class="work-grid work-puzzle-grid">
+<article>
+<img alt="Analytics foundation health scan with connected dashboards and data pipelines" class="work-card-image" src="assets/home-generated/work-health-check.webp" loading="lazy" decoding="async">
+<span class="work-step">01</span>
+<h3>Start with the real constraint</h3>
+<p>Bring the dashboard, KPI debate, manual process, architecture bottleneck, or decision that keeps slowing the team down.</p>
+</article>
+<article>
+<img alt="Scattered metrics converging into one aligned decision layer" class="work-card-image" src="assets/home-generated/work-clear-results.webp" loading="lazy" decoding="async">
+<span class="work-step">02</span>
+<h3>Diagnose how the pieces connect</h3>
+<p>We trace the issue across data, definitions, tools, owners, workflows, and the decisions reporting is meant to support.</p>
+</article>
+<article>
+<img alt="Trusted metric nodes aligning across connected teams" class="work-card-image" src="assets/home-generated/work-empower-team.webp" loading="lazy" decoding="async">
+<span class="work-step">03</span>
+<h3>Build the right-fit strategy</h3>
+<p>The answer may be a focused reliability fix, KPI reset, dashboard rebuild, governance model, automation path, or architecture roadmap.</p>
+</article>
+<article>
+<img alt="Continuous optimization loop around monitored analytics systems" class="work-card-image" src="assets/home-generated/work-ongoing-optimization.webp" loading="lazy" decoding="async">
+<span class="work-step">04</span>
+<h3>Embed, transfer, and evolve</h3>
+<p>We document the logic, clarify ownership, enable the team, and adjust the system as priorities and operating needs change.</p>
+</article>
+</div>
+<a class="work-fit-link" href="free-fit-check.html">Start with a free 15-minute Fit Check</a>
+</div>
+</section>
+<section aria-labelledby="proof-title" class="proof-section reveal-card">
+<div class="proof-intro">
+<p class="page-kicker">What you leave with</p>
+<h2 id="proof-title">A clear answer to three practical questions.</h2>
+<p>No abstract maturity model and no automatic recommendation to rebuild everything. The Fit Check gives you a plain-language starting point.</p>
+</div>
+<div class="proof-grid">
+<article>
+<span>01</span>
+<strong>What is actually going wrong?</strong>
+<p>A concise summary of the reporting, data, ownership, or workflow issue creating the visible symptom.</p>
+</article>
+<article>
+<span>02</span>
+<strong>What should happen first?</strong>
+<p>The highest-value starting move depends on the constraint, whether that is clarifying a KPI, tracing a source, retiring reports, or fixing a workflow.</p>
+</article>
+<article>
+<span>03</span>
+<strong>What level of help makes sense?</strong>
+<p>A practical recommendation for a focused fix, diagnostic, rebuild, ongoing support, or no engagement at all.</p>
+</article>
+</div>
+</section>
+<section aria-labelledby="case-study-title" class="case-study-section reveal-card">
+<div class="case-study-heading">
+<p class="page-kicker">Anonymized client work</p>
+<h2 id="case-study-title">Specific operating problems. Practical analytics outcomes.</h2>
+<p>Concise previews from anonymized engagements. The full Case Studies page expands the client context, work completed, verified figures, qualitative outcomes, and industry-specific stories.</p>
+</div>
+<div class="case-study-grid">
+<article><div class="case-study-artifact" aria-label="Dashboard consolidation visual"><span>14 reports</span><span>4 executive views</span><span>1 governed revenue definition</span></div><p class="page-kicker">$50M-$100M industrial software company</p><h3>Consolidated overlapping revenue reporting into an executive view.</h3><p>Mapped dashboard owners, removed duplicate views, and established governed revenue logic so leadership could move from reconciliation to action.</p><a class="secondary-action" href="case-studies.html#industrial-software-revenue">Read the case study</a></article>
+<article><div class="case-study-artifact case-study-artifact-alt" aria-label="Metric ownership visual"><span>5 disputed KPIs</span><span>5 named owners</span><span>1 weekly cadence</span></div><p class="page-kicker">500+ employee field services company</p><h3>Turned KPI debates into an owned weekly decision cadence.</h3><p>Defined priority KPIs, named owners, and connected thresholds to staffing, routing, and margin decisions.</p><a class="secondary-action" href="case-studies.html#field-services-kpis">Read the case study</a></article>
+<article><div class="case-study-artifact case-study-artifact-third" aria-label="Automation result visual"><span>Manual exports</span><span>Automated refresh</span><span>Trusted scorecard</span></div><p class="page-kicker">$25M-$50M B2B services company</p><h3>Replaced recurring reporting assembly with a trusted scorecard workflow.</h3><p>Automated refresh, documented definitions, and reduced duplicated report development around recurring management decisions.</p><a class="secondary-action" href="case-studies.html#b2b-services-scorecard">Read the case study</a></article>
+<article><div class="case-study-artifact case-study-artifact-fourth" aria-label="Analytics architecture result visual"><span>6 source systems</span><span>1 governed data path</span><span>Daily reliability checks</span></div><p class="page-kicker">$100M+ multi-entity manufacturer</p><h3>Created a scalable reporting architecture across disconnected operating systems.</h3><p>Mapped systems of record, defined reusable business entities, and established one governed path into the reporting layer.</p><a class="secondary-action" href="case-studies.html#manufacturing-throughput">Read the case study</a></article>
+</div>
+<div class="case-study-heading"><a class="primary-action" href="case-studies.html">Explore Case Studies</a></div>
+</section>
+<section class="founder-credibility-section reveal-card" aria-labelledby="founder-credibility-title">
+<img src="assets/jonah-founder-credibility.webp" alt="Jonah Robinson, founder of Parallax Data Lab" loading="lazy" decoding="async">
+<div>
+<p class="page-kicker">Experienced analytics leadership</p>
+<h2 id="founder-credibility-title">Built by a data leader who has operated inside the problems Parallax solves.</h2>
+<p>Led enterprise analytics initiatives across Fortune 500 manufacturing and SaaS organizations. Founded by a data leader with expertise in BI strategy, Power BI, data engineering, automation, governance, predictive analytics, and AI-enabled analytics.</p>
+<a href="about.html">Meet the founder and learn how Parallax works</a>
+</div>
+</section>
+<section class="enterprise-credibility-panel reveal-card" aria-labelledby="enterprise-credibility-title">
+<div>
+<p class="page-kicker">Founder-led, enterprise-tested</p>
+<h2 id="enterprise-credibility-title">Enterprise Analytics Experience, Delivered Through a Boutique Partnership</h2>
+</div>
+<div class="enterprise-credibility-grid">
+<article><strong>7+ years</strong><span>delivering enterprise analytics solutions across manufacturing, healthcare, safety, operations, and SaaS</span></article>
+<article><strong>100+ dashboards</strong><span>designed across executive, operational, and customer-facing use cases</span></article>
+<article><strong>2 billion records +</strong><span>supported across modern cloud analytics environments</span></article>
+<article><strong>Enterprise context</strong><span>supporting analytics initiatives for Fortune 500 organizations and global enterprises</span></article>
+<article><strong>Hands-on depth</strong><span>Power BI, SQL, Python, cloud data warehouses, analytics governance, and AI readiness</span></article>
+</div>
+</section>
+<section class="ai-foundation-section reveal-card" aria-labelledby="ai-foundation-title">
+<div class="ai-foundation-copy">
+<p class="page-kicker">AI readiness starts before AI</p>
+<h2 id="ai-foundation-title">Analytics Foundations for AI</h2>
+<p>Most AI initiatives struggle because reporting foundations are not ready. Disconnected data sources, conflicting KPI definitions, unclear ownership, and weak governance create unreliable inputs for AI systems.</p>
+<p>Parallax helps organizations establish the reporting, governance, semantic modeling, and data architecture required to support AI, automation, predictive analytics, and operational intelligence.</p>
+<p>The goal is not to deploy AI faster. The goal is to deploy AI on a foundation leaders can trust.</p>
+<a class="primary-action" href="data-integration-analytics-architecture.html">Explore Data Integration &amp; Analytics Architecture</a>
+</div>
+<div class="enterprise-architecture-flow" aria-label="Enterprise analytics architecture flow">
+<span>Source Systems</span>
+<span>Data Integration</span>
+<span>Semantic Layer</span>
+<span>Governed KPIs</span>
+<span>Executive Reporting</span>
+<span>Operational Intelligence</span>
+<strong>AI &amp; Decision Systems</strong>
+</div>
+</section>
+<section class="failure-section reveal-card">
+<div class="failure-heading">
+<p class="page-kicker">Patterns we see</p>
+<h2>Patterns We Look For</h2>
+<p class="section-lede">Most trust problems come from slow drift, not one obvious failure.</p>
+</div>
+<div aria-label="Failure pattern navigation" class="section-controls failure-controls">
+<button aria-label="Show previous failure patterns" data-carousel-prev="failure" type="button">Prev</button>
+<span data-carousel-status="failure">1 / 2</span>
+<button aria-label="Show next failure patterns" data-carousel-next="failure" type="button">Next</button>
+</div>
+<div class="stat-grid failure-grid">
+<article data-carousel-item="failure" data-page="0">
+<img alt="Disconnected systems creating uncertainty about the source of truth" class="failure-image" src="assets/home-generated/failure-source-of-truth.webp" loading="lazy" decoding="async">
+<strong>Unclear source of truth</strong>
+<p>Teams are not sure which source, dashboard, or definition should win.</p>
+</article>
+<article data-carousel-item="failure" data-page="0">
+<img alt="Conflicting dashboards showing different versions of the same metric" class="failure-image" src="assets/home-generated/failure-conflicting-numbers.webp" loading="lazy" decoding="async">
+<strong>Conflicting numbers</strong>
+<p>The same metric shows up differently across reports, teams, and meetings.</p>
+</article>
+<article data-carousel-item="failure" data-page="0">
+<img alt="Analytics system bending under growing reporting complexity" class="failure-image" src="assets/home-generated/failure-scale-breaks.webp" loading="lazy" decoding="async">
+<strong>Fragile scale</strong>
+<p>Every new team, region, or workflow adds reporting debt and slows change.</p>
+</article>
+<article data-carousel-item="failure" data-page="1">
+<img alt="Repeated logic copied across dashboards and spreadsheets" class="failure-image" src="assets/home-generated/failure-duplicate-logic.webp" loading="lazy" decoding="async">
+<strong>Duplicated logic</strong>
+<p>Calculations get copied into dashboards, spreadsheets, and one-off queries.</p>
+</article>
+<article data-carousel-item="failure" data-page="1">
+<img alt="Metric definitions drifting across connected reports" class="failure-image" src="assets/home-generated/failure-definition-drift.webp" loading="lazy" decoding="async">
+<strong>Definition drift</strong>
+<p>Metric meaning changes by team, timeframe, tool, or report builder.</p>
+</article>
+<article data-carousel-item="failure" data-page="1">
+<img alt="Decision meeting turning into a debate over analytics numbers" class="failure-image" src="assets/home-generated/failure-number-debates.webp" loading="lazy" decoding="async">
+<strong>Decision debate</strong>
+<p>Meetings shift from choosing action to defending which numbers are right.</p>
+</article>
+</div>
+<p class="section-note">These issues rarely surface all at once. Most teams experience them gradually, as definitions drift, ownership blurs, and confidence in analytics quietly erodes.</p>
+</section>
+<section class="trust-section reveal-card">
+<h2>Outcomes After Trust Is Restored</h2>
+<div aria-label="Quote navigation" class="section-controls quote-controls">
+<button aria-label="Show previous quotes" data-carousel-prev="quote" type="button">Prev</button>
+<span data-carousel-status="quote">1 / 2</span>
+<button aria-label="Show next quotes" data-carousel-next="quote" type="button">Next</button>
+</div>
+<div class="quote-grid">
+<article data-carousel-item="quote" data-page="0">
+<img alt="Verified decision signal in a trusted analytics network" class="quote-image" src="assets/home-generated/quote-trust-restored.webp" loading="lazy" decoding="async">
+<blockquote>Teams stop arguing about which numbers are right. The biggest change is not always a new dashboard. It is shared confidence in the operating metrics.</blockquote>
+<div class="quote-person">
+<strong>Director of Analytics</strong>
+<span>Mid-market SaaS company</span>
+<em>Outcome pattern</em>
+</div>
+</article>
+<article data-carousel-item="quote" data-page="0">
+<img alt="Governed metric definitions resolving into one analytics path" class="quote-image" src="assets/home-generated/quote-ownership-definitions.webp" loading="lazy" decoding="async">
+<blockquote>The visible dashboard problem often resolves once metric ownership, definitions, and decision use cases become explicit.</blockquote>
+<div class="quote-person">
+<strong>VP of Operations</strong>
+<span>Industrial &amp; Manufacturing</span>
+<em>Outcome pattern</em>
+</div>
+</article>
+<article data-carousel-item="quote" data-page="0">
+<img alt="Dashboards connecting to a clear leadership decision target" class="quote-image" src="assets/home-generated/quote-leadership-decisions.webp" loading="lazy" decoding="async">
+<blockquote>Analytics becomes more useful when reports are rebuilt around the way leadership actually makes tradeoffs and decisions.</blockquote>
+<div class="quote-person">
+<strong>Product Leader</strong>
+<span>Enterprise SaaS</span>
+<em>Outcome pattern</em>
+</div>
+</article>
+<article data-carousel-item="quote" data-page="1">
+<img alt="Verified decision signal in a trusted analytics network" class="quote-image" src="assets/home-generated/quote-trust-restored.webp" loading="lazy" decoding="async">
+<blockquote>Follow-up questions move faster because the model, logic, and definitions are stable enough to support deeper analysis.</blockquote>
+<div class="quote-person">
+<strong>Revenue Operations Lead</strong>
+<span>Growth-stage SaaS</span>
+<em>Outcome pattern</em>
+</div>
+</article>
+<article data-carousel-item="quote" data-page="1">
+<img alt="Governed metric definitions resolving into one analytics path" class="quote-image" src="assets/home-generated/quote-ownership-definitions.webp" loading="lazy" decoding="async">
+<blockquote>Teams separate operating signals from legacy noise and assign clear ownership to the metrics that should guide action.</blockquote>
+<div class="quote-person">
+<strong>Chief Operating Officer</strong>
+<span>Multi-site Services</span>
+<em>Outcome pattern</em>
+</div>
+</article>
+<article data-carousel-item="quote" data-page="1">
+<img alt="Dashboards connecting to a clear leadership decision target" class="quote-image" src="assets/home-generated/quote-leadership-decisions.webp" loading="lazy" decoding="async">
+<blockquote>Analytics shifts from a dashboard queue into operating infrastructure with standards, ownership, and repeatable logic.</blockquote>
+<div class="quote-person">
+<strong>Head of Product</strong>
+<span>B2B Platform Company</span>
+<em>Outcome pattern</em>
+</div>
+</article>
+</div>
+</section>
+<section class="closing-section">
+<h2>Build analytics leaders can trust.</h2>
+<p>Get a clear read on what is breaking and the best next step.</p>
+<div class="health-check-next-steps" aria-label="What happens after you request a Fit Check">
+<h3>What happens after you request a Fit Check</h3>
+<ol>
+<li>You share the context.</li>
+<li>We identify the trust breaks.</li>
+<li>You get a recommended next step.</li>
+<li>You decide whether to move forward.</li>
+</ol>
+</div>
+<a class="primary-action" href="free-fit-check.html">Book a 15-Minute Fit Check</a>
+</section>
+</main>
+<footer aria-label="Site footer" class="site-footer site-footer-refined">
+  <div class="site-footer-inner">
+    <div class="site-footer-col site-footer-about">
+      <a class="site-footer-brand" href="index.html">Parallax Data Lab</a>
+      <p>Parallax Data Lab provides business intelligence consulting, Power BI dashboard development, reporting automation, and analytics support for teams that need clearer data.</p>
+      <p class="site-footer-location">Cincinnati, Ohio. Based in Cincinnati and serving teams across the United States.</p>
+      <a class="site-footer-contact-button" href="contact.html">Contact Parallax Data Lab</a>
+    </div>
+    <nav aria-label="Footer navigation" class="site-footer-col">
+      <h3>Pages</h3>
+      <a href="index.html">Home</a>
+            <a href="our-offerings.html">Offerings</a>
+      <a href="expertise.html">Expertise</a>
+      <a href="insights.html">Insights</a>
+      <a href="case-studies.html">Case Studies</a>
+      <a href="about.html">About</a>
+      <a href="business-intelligence-consultant-cincinnati.html">Local Analytics Consulting</a>
+      <a href="privacy-policy.html">Privacy Policy</a>
+    </nav>
+    <nav aria-label="Footer core work" class="site-footer-col site-footer-core-work">
+      <h3>Core Work</h3>
+      <a href="free-fit-check.html">Free Fit Check</a>
+      <a href="analytics-health-check.html">Analytics Health Check</a>
+      <a href="decision-system-reset.html">Decision System Reset</a>
+      <a href="fractional-analytics.html">Fractional Analytics</a>
+      <a href="intelligence-lab.html">Intelligence Lab</a>
+    </nav>
+    <nav aria-label="Footer expertise" class="site-footer-col site-footer-intel">
+      <h3>Expertise</h3>
+      <a href="expertise.html">Expertise Overview</a>
+      <a href="power-bi-consultant-cincinnati.html">Power BI & Microsoft Fabric</a>
+      <a href="kpi-reporting-consulting.html">KPI Strategy &amp; Executive Reporting</a>
+      <a href="reporting-automation-consulting.html">Reporting Automation</a>
+      <a href="data-quality-analytics-reliability.html">Data Quality &amp; Analytics Reliability</a>
+      <a href="dashboard-trust-governance.html">BI Governance &amp; Dashboard Trust</a>
+      <a href="data-integration-analytics-architecture.html">Data Integration &amp; Analytics Architecture</a>
+    </nav>
+    <div class="site-footer-col site-footer-contact">
+      <h3>Contact</h3>
+      <a class="site-footer-secondary" href="https://calendly.com/jonahnr/parallax-data-lab-intro-call">Book a 15-Minute Fit Check</a>
+      <a class="site-footer-secondary" href="contact.html">Contact Parallax Data Lab</a>
+      <a class="site-footer-email site-footer-contact-email" href="mailto:jonahnr@gmail.com?subject=Parallax%20Data%20Lab%20Inquiry">Email us</a>
+      <div class="site-footer-social" aria-label="Parallax Data Lab social profiles">
+        <a class="site-social-link site-social-linkedin" href="https://www.linkedin.com/company/129543938/admin/dashboard/" target="_blank" rel="noopener noreferrer" aria-label="Parallax Data Lab on LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.1 8.4h3.8v11.5H5.1V8.4Zm1.9-5.7a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Zm4.1 5.7h3.6v1.6h.1c.5-.9 1.7-1.9 3.5-1.9 3.7 0 4.4 2.4 4.4 5.6v6.2h-3.8v-5.5c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9v5.6h-3.8V8.4Z"/></svg></a>
+        <a class="site-social-link site-social-youtube" href="https://www.youtube.com/@ParallaxDataLab" target="_blank" rel="noopener noreferrer" aria-label="Parallax Data Lab on YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 7.1a3 3 0 0 0-2.1-2.1C18 4.5 12 4.5 12 4.5s-6 0-7.9.5A3 3 0 0 0 2 7.1 31.6 31.6 0 0 0 1.5 12c0 1.7.2 3.4.5 4.9A3 3 0 0 0 4.1 19c1.9.5 7.9.5 7.9.5s6 0 7.9-.5a3 3 0 0 0 2.1-2.1c.3-1.5.5-3.2.5-4.9s-.2-3.4-.5-4.9ZM10 15.2V8.8l5.6 3.2-5.6 3.2Z"/></svg></a>
+        <a class="site-social-link site-social-instagram" href="https://www.instagram.com/parallaxdatalab/" target="_blank" rel="noopener noreferrer" aria-label="Parallax Data Lab on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 2.8h9.6a4.4 4.4 0 0 1 4.4 4.4v9.6a4.4 4.4 0 0 1-4.4 4.4H7.2a4.4 4.4 0 0 1-4.4-4.4V7.2a4.4 4.4 0 0 1 4.4-4.4Zm0 2A2.4 2.4 0 0 0 4.8 7.2v9.6a2.4 2.4 0 0 0 2.4 2.4h9.6a2.4 2.4 0 0 0 2.4-2.4V7.2a2.4 2.4 0 0 0-2.4-2.4H7.2Zm4.8 3a4.2 4.2 0 1 1 0 8.4 4.2 4.2 0 0 1 0-8.4Zm0 2a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Zm4.6-2.9a1 1 0 1 1 0 2.1 1 1 0 0 1 0-2.1Z"/></svg></a>
+        <a class="site-social-link site-social-x" href="https://x.com/parallaxdatalab" target="_blank" rel="noopener noreferrer" aria-label="Parallax Data Lab on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.8 10.4 21.1 2h-1.7l-6.3 7.2L8 2H2.2l7.7 11-7.7 9h1.7l6.8-7.8 5.5 7.8H22l-8.2-11.6Zm-2.4 2.8-.8-1.1L4.4 3.3h2.8l5 7.1.8 1.1 6.5 9.2h-2.8l-5.3-7.5Z"/></svg></a>
       </div>
-    </main>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+    </div>
+  </div>
+  <div class="site-footer-bottom">
+    <p>&copy; 2026 Parallax Data Lab. All rights reserved.</p>
+  </div>
+</footer><script src="home.min.js?v=182"></script>
+</body>
 </html>
